@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Stats } from '@react-three/drei';
 import * as THREE from 'three';
 import { Pitch } from './Pitch';
+import { Stadium } from './Stadium';
 import { MatchPlayback } from './MatchPlayback';
 import { TVCamera } from './TVCamera';
 import { buildDemoChunk } from '@/lib/demoChunk';
@@ -20,6 +21,7 @@ interface LoadedMatch {
 export default function Scene() {
   const ballRef = useRef<THREE.Group>(null);
   const [match, setMatch] = useState<LoadedMatch | null>(null);
+  const showStadium = useMatchStore((s) => s.showStadium);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,6 +72,11 @@ export default function Scene() {
         shadow-camera-bottom={-70}
       />
 
+      {showStadium && (
+        <Suspense fallback={null}>
+          <Stadium />
+        </Suspense>
+      )}
       <Pitch />
       {match && (
         <MatchPlayback

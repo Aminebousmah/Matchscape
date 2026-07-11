@@ -83,9 +83,11 @@ balle), Penalty dédié, Shoot2/Header2/Tackle2/GkCatch2/GkDive2 (variantes
 anti-répétition), et un set gardien complet (GkIdle, GkDirect, GkSidestep,
 GkCatch, GkBlock, GkMiss, GkThrow, GkKick, GkPass, GkPlace).
 
+**Ajoutés depuis (3e dépôt) :** Walk + WalkStart (état WALK actif, seuils
+0,3–2,6 m/s), Turn/TurnLeft/TurnRight (dispo dans le GLB, pas encore
+déclenchés — le slerp gère l'orientation pour l'instant). **47 clips.**
+
 **Encore manquants (prochaine session Mixamo) :**
-- `walk.fbx` — "Walking" ← **le plus important restant** (replacements lents)
-- `turn.fbx` — "Left/Right Turn"
 - `argue.fbx` — "Arguing" (contestation carton)
 - `celebrate_2.fbx` / `celebrate_team.fbx` — variantes de célébration
 - `disappointed.fbx` — "Defeated" (équipe qui encaisse)

@@ -9,7 +9,7 @@ export interface Waypoint {
   z?: number;
 }
 
-export type PlayerAnimState = 'IDLE' | 'RUN' | 'SPRINT';
+export type PlayerAnimState = 'IDLE' | 'WALK' | 'RUN' | 'SPRINT';
 
 export type ActionType = 'PASS' | 'SHOOT' | 'TACKLE' | 'CELEBRATE' | 'GK_DIVE';
 
@@ -30,12 +30,14 @@ export interface PlayerMotion {
   oneShot: ActionType | null;
 }
 
-/** Vitesse (m/s) au-delà de laquelle on passe de IDLE à RUN, puis de RUN à SPRINT */
-export const RUN_SPEED_THRESHOLD = 0.3;
+/** Seuils de vitesse (m/s) entre états de locomotion */
+export const WALK_SPEED_THRESHOLD = 0.3;
+export const RUN_SPEED_THRESHOLD = 2.6;
 export const SPRINT_SPEED_THRESHOLD = 6.0;
 
 export function animStateForSpeed(speed: number): PlayerAnimState {
-  if (speed < RUN_SPEED_THRESHOLD) return 'IDLE';
+  if (speed < WALK_SPEED_THRESHOLD) return 'IDLE';
+  if (speed < RUN_SPEED_THRESHOLD) return 'WALK';
   if (speed < SPRINT_SPEED_THRESHOLD) return 'RUN';
   return 'SPRINT';
 }

@@ -8,6 +8,8 @@ interface MatchHudState {
   /** Multiplicateur de vitesse de rejeu (1 = temps réel) */
   playbackRate: number;
   setPlaybackRate: (rate: number) => void;
+  showStadium: boolean;
+  toggleStadium: () => void;
 }
 
 export const useMatchStore = create<MatchHudState>((set) => ({
@@ -17,4 +19,6 @@ export const useMatchStore = create<MatchHudState>((set) => ({
   teams: null,
   playbackRate: 8,
   setPlaybackRate: (playbackRate) => set({ playbackRate }),
+  showStadium: true,
+  toggleStadium: () => set((s) => ({ showStadium: !s.showStadium })),
 }));

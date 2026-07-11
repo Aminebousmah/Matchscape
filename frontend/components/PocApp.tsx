@@ -45,8 +45,10 @@ function CommentaryBanner() {
 function SpeedControls() {
   const rate = useMatchStore((s) => s.playbackRate);
   const setRate = useMatchStore((s) => s.setPlaybackRate);
+  const showStadium = useMatchStore((s) => s.showStadium);
+  const toggleStadium = useMatchStore((s) => s.toggleStadium);
   return (
-    <div className="absolute right-4 top-4 flex gap-1 font-mono text-xs">
+    <div className="absolute right-4 top-4 flex items-center gap-1 font-mono text-xs">
       {RATES.map((r) => (
         <button
           key={r}
@@ -58,6 +60,14 @@ function SpeedControls() {
           ×{r}
         </button>
       ))}
+      <button
+        onClick={toggleStadium}
+        className={`ml-2 rounded px-2 py-1 ${
+          showStadium ? 'bg-green-500 text-black' : 'bg-black/60 text-white hover:bg-black/80'
+        }`}
+      >
+        Stade
+      </button>
     </div>
   );
 }

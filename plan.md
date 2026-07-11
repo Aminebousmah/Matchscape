@@ -60,6 +60,11 @@ Critère de sortie : un joueur court d'un point A à un point B avec une animati
 - [ ] Variation des patterns d'attaque (aile gauche/droite/axe, contre-attaque vs possession)
 - ✅ Critère : un match complet du week-end (payloads réels) → suite de chunks cohérente de bout en bout — **v0 validée sur le match test, reste à valider sur un vrai match (clé API)**
 
+### 1.C bis — Décor stade ← **validation visuelle Amine requise**
+- [x] Modèle stade importé (FBX 34 Mo → GLB 4,3 Mo, draco+webp), composant `Stadium.tsx` avec bouton d'affichage
+- [ ] **Régler l'échelle/rotation/offset** (constantes `STADIUM` dans `Stadium.tsx`) : l'empreinte brute est 770×770 unités, échelle estimée à 0,32 sans visuel — Amine doit dire si la pelouse du modèle coïncide avec nos lignes, sinon j'ajuste depuis une capture
+- [ ] Décider : garder notre `Pitch` (lignes) par-dessus, ou masquer notre pelouse si le modèle en fournit une correcte
+
 ### 1.C — Renderer complet
 - [x] **Démarré en avance (2026-07-11)** : format `MatchScriptChunk` typé (`lib/matchScript.ts`), rejeu complet par `MatchPlayback` (22 joueurs clonés SkeletonUtils + ballon avec hauteur z, une seule boucle useFrame), TimedAction → clips one-shot (PASS/SHOOT/TACKLE/CELEBRATE/GK_DIVE), chunk de démo scripté 60 s (`lib/demoChunk.ts` : 2 attaques + buts + circulation, testé : bornes terrain, vitesses ≤ 10,5 m/s, boucle sans téléportation)
 - [x] Fix moteur : interpolation Hermite à tangentes pondérées par le temps (la Catmull-Rom uniforme créait des pics de vitesse aux changements de rythme) + suppression du root motion Mixamo dans `tools/mixamo_to_glb.py` (bug "téléportation" du joueur)

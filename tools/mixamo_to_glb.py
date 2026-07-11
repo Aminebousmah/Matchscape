@@ -37,6 +37,10 @@ CLIP_NAMES = {
     "gk_dive": "GkDive",
     # Tier 1 - locomotion
     "walk": "Walk",
+    "walk_start": "WalkStart",
+    "turn": "Turn",
+    "turn_left": "TurnLeft",
+    "turn_right": "TurnRight",
     "jog_back": "JogBack",
     "jog_fwd_diag": "JogFwdDiag",
     "jog_fwd_diag_2": "JogFwdDiag2",
@@ -46,7 +50,6 @@ CLIP_NAMES = {
     "strafe_right": "StrafeRight",
     "idle_2": "Idle2",
     "idle_3": "Idle3",
-    "turn": "Turn",
     "dribble": "Dribble",
     "dribble_2": "Dribble2",
     # Tier 2 - gestes football
@@ -87,7 +90,7 @@ CLIP_NAMES = {
 # des hanches) est aplati, sinon le joueur avance puis se teleporte en
 # arriere a chaque boucle du clip.
 IN_PLACE_CLIPS = {
-    "Idle", "Idle2", "Idle3", "Run", "Sprint", "Walk",
+    "Idle", "Idle2", "Idle3", "Run", "Sprint", "Walk", "WalkStart",
     "JogBack", "JogFwdDiag", "JogFwdDiag2", "JogBackDiag", "JogBackDiag2",
     "StrafeLeft", "StrafeRight", "Dribble", "Dribble2",
     "GkIdle", "GkDirect", "GkSidestep", "Receive", "Disappointed",

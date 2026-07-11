@@ -20,6 +20,7 @@ const MODEL = {
   url: '/models/player.glb', // Mixamo multi-clips (tools/mixamo_to_glb.py)
   clips: {
     IDLE: { name: 'Idle', naturalSpeed: 0 },
+    WALK: { name: 'Walk', naturalSpeed: 1.4 },
     RUN: { name: 'Run', naturalSpeed: 3.0 },
     SPRINT: { name: 'Sprint', naturalSpeed: 5.5 },
   } satisfies Record<PlayerAnimState, { name: string; naturalSpeed: number }>,
