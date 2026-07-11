@@ -1,17 +1,16 @@
 'use client';
 
-import { useRef, type MutableRefObject } from 'react';
+import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { animStateForSpeed, SPRINT_SPEED_THRESHOLD } from '@/lib/types';
-
-export interface PlayerMotion {
-  /** Vitesse sol instantanée (m/s), écrite par le contrôleur de waypoints */
-  speed: number;
-}
+import {
+  animStateForSpeed,
+  SPRINT_SPEED_THRESHOLD,
+  type PlayerMotion,
+} from '@/lib/types';
 
 interface PlayerRigProps {
-  motion: MutableRefObject<PlayerMotion>;
+  motion: PlayerMotion;
   shirtColor?: string;
   shortsColor?: string;
   skinColor?: string;
@@ -39,7 +38,7 @@ export function PlayerRig({
 
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.1);
-    const speed = motion.current.speed;
+    const speed = motion.speed;
     const state = animStateForSpeed(speed);
 
     // Cadence de foulée proportionnelle à la vitesse (~2,6 pas/s à 6 m/s)

@@ -2,7 +2,7 @@
 
 > Plan d'exécution opérationnel. La vision et l'architecture sont dans [CLAUDE.md](CLAUDE.md) — ce fichier suit **ce qui est fait, en cours, et à faire**, dans l'ordre.
 
-**Dernière mise à jour : 2026-07-11**
+**Dernière mise à jour : 2026-07-11 (après-midi)**
 
 ---
 
@@ -63,10 +63,12 @@ Critère de sortie : un joueur court d'un point A à un point B avec une animati
 - ✅ Critère : un match complet du week-end → suite de chunks cohérente de bout en bout
 
 ### 1.C — Renderer complet
-- [ ] 22 joueurs + arbitre instanciés (instanced meshes, animations partagées)
-- [ ] Consommation des `MatchScriptChunk` (fichier statique d'abord, WebSocket en phase 2)
-- [ ] Séquence but : cut caméra derrière le but + ralenti + célébration
+- [x] **Démarré en avance (2026-07-11)** : format `MatchScriptChunk` typé (`lib/matchScript.ts`), rejeu complet par `MatchPlayback` (22 joueurs clonés SkeletonUtils + ballon avec hauteur z, une seule boucle useFrame), TimedAction → clips one-shot (PASS/SHOOT/TACKLE/CELEBRATE/GK_DIVE), chunk de démo scripté 60 s (`lib/demoChunk.ts` : 2 attaques + buts + circulation, testé : bornes terrain, vitesses ≤ 10,5 m/s, boucle sans téléportation)
+- [x] Fix moteur : interpolation Hermite à tangentes pondérées par le temps (la Catmull-Rom uniforme créait des pics de vitesse aux changements de rythme) + suppression du root motion Mixamo dans `tools/mixamo_to_glb.py` (bug "téléportation" du joueur)
+- [ ] Consommation de chunks depuis fichier statique JSON puis WebSocket (phase 2)
+- [ ] Séquence but : cut caméra derrière le but + ralenti
 - [ ] HUD rétro PES : score, minute, radar 2D, bandeau événement
+- [ ] Arbitre + gardiens avec comportements dédiés
 - ✅ Critère de phase 1 : rejouer un match terminé de bout en bout dans le navigateur
 
 ---

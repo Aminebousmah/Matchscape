@@ -28,7 +28,7 @@ describe('WaypointPath', () => {
 
   it('clamps outside the time range', () => {
     const path = new WaypointPath(WPS);
-    expect(path.positionAt(-5)).toEqual({ x: -40, y: -20 });
+    expect(path.positionAt(-5)).toEqual({ x: -40, y: -20, z: 0 });
     const end = path.positionAt(999);
     expect(end.x).toBeCloseTo(8, 5);
     expect(end.y).toBeCloseTo(6, 5);
@@ -68,6 +68,22 @@ describe('WaypointPath', () => {
       expect(step).toBeLessThan(0.8);
       prev = cur;
     }
+  });
+
+  it('interpolates ball height (z) as an arc and never goes underground', () => {
+    // centre : départ sol, pic à 3,5 m, réception sol
+    const path = new WaypointPath([
+      { t: 0, x: 0, y: 0 },
+      { t: 1, x: 10, y: 0, z: 3.5 },
+      { t: 2, x: 20, y: 0 },
+    ]);
+    expect(path.positionAt(0).z).toBe(0);
+    expect(path.positionAt(1).z).toBeCloseTo(3.5, 5);
+    expect(path.positionAt(2).z).toBeCloseTo(0, 5);
+    for (let t = 0; t <= 2; t += 0.05) {
+      expect(path.positionAt(t).z).toBeGreaterThanOrEqual(0);
+    }
+    expect(path.positionAt(0.5).z).toBeGreaterThan(1);
   });
 
   it('sorts unordered waypoints by time', () => {

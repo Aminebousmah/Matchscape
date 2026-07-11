@@ -30,6 +30,44 @@ CLIP_NAMES = {
     "gk_dive": "GkDive",
 }
 
+# Clips dont le deplacement est pilote par les waypoints du renderer :
+# tout root motion residuel (case "In Place" oubliee sur Mixamo, ou derive
+# des hanches) est aplati, sinon le joueur avance puis se teleporte en
+# arriere a chaque boucle du clip.
+IN_PLACE_CLIPS = {"Idle", "Run", "Sprint"}
+
+
+def strip_root_motion(action: bpy.types.Action) -> None:
+    """Aplati les axes de translation qui derivent (racine + hanches).
+
+    Un axe d'oscillation (rebond vertical, balancement lateral) revient a sa
+    valeur initiale a chaque cycle ; un axe de deplacement derive de facon
+    monotone. On detecte ces derniers par le ratio derive/amplitude, ce qui
+    reste independant des unites et de l'orientation du rig.
+    """
+    for fc in list(action.fcurves):
+        dp = fc.data_path
+        is_bone_loc = dp.endswith(".location") and "Hips" in dp
+        is_object_loc = dp == "location"
+        if not (is_bone_loc or is_object_loc):
+            continue
+        pts = fc.keyframe_points
+        if len(pts) < 2:
+            continue
+        values = [kp.co[1] for kp in pts]
+        drift = abs(values[-1] - values[0])
+        spread = max(values) - min(values)
+        if spread > 1e-6 and drift > 0.5 * spread:
+            base = values[0]
+            for kp in pts:
+                kp.co[1] = base
+                kp.handle_left[1] = base
+                kp.handle_right[1] = base
+            print(
+                f"[in-place] {action.name}: {dp}[{fc.array_index}] "
+                f"aplati (derive {drift:.2f})"
+            )
+
 
 def parse_args() -> argparse.Namespace:
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
@@ -110,6 +148,9 @@ def main() -> None:
         action = action.copy()
         action.name = clip_name
         action.use_fake_user = True
+
+        if clip_name in IN_PLACE_CLIPS:
+            strip_root_motion(action)
 
         track = base_armature.animation_data.nla_tracks.new()
         track.name = clip_name
