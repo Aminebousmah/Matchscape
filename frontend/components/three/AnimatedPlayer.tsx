@@ -12,17 +12,18 @@ import type { PlayerMotion } from './PlayerRig';
  * Mixamo…), déposer le .glb dans public/models/ et ajuster uniquement ce bloc.
  */
 const MODEL = {
-  url: '/models/player.glb', // dev: Soldier.glb des exemples three.js
+  url: '/models/player.glb', // Mixamo multi-clips (tools/mixamo_to_glb.py)
+  // Le GLB contient aussi Pass/Shoot/Tackle/Celebrate/GkDive, déclenchés
+  // plus tard par les TimedAction du MatchScript (phase 1).
   clips: {
-    IDLE: 'Idle',
-    RUN: 'Run',
-    SPRINT: 'Run', // pas de clip sprint dédié : Run accéléré via timeScale
-  } satisfies Record<PlayerAnimState, string>,
-  /** Rotation Y pour amener le modèle face à +Z (convention du rig) */
-  forwardOffsetY: Math.PI,
+    IDLE: { name: 'Idle', naturalSpeed: 0 },
+    RUN: { name: 'Run', naturalSpeed: 3.0 },
+    SPRINT: { name: 'Sprint', naturalSpeed: 5.5 },
+  } satisfies Record<PlayerAnimState, { name: string; naturalSpeed: number }>,
+  /** Rotation Y pour amener le modèle face à +Z (convention du rig).
+   *  Export Blender de FBX Mixamo → déjà face à +Z, donc 0. */
+  forwardOffsetY: 0,
   scale: 1,
-  /** Vitesse sol (m/s) que couvre le clip Run à timeScale 1 — cale la cadence sur la vitesse réelle pour éviter le foot sliding */
-  naturalRunSpeed: 4.0,
 };
 
 const FADE_DURATION = 0.25;
@@ -51,9 +52,9 @@ export function AnimatedPlayer({ motion }: AnimatedPlayerProps) {
     const state = animStateForSpeed(speed);
 
     if (state !== currentState.current) {
-      const nextAction = actions[MODEL.clips[state]];
+      const nextAction = actions[MODEL.clips[state].name];
       const prevAction = currentState.current
-        ? actions[MODEL.clips[currentState.current]]
+        ? actions[MODEL.clips[currentState.current].name]
         : null;
       if (nextAction && nextAction !== prevAction) {
         nextAction.reset().fadeIn(FADE_DURATION).play();
@@ -62,11 +63,13 @@ export function AnimatedPlayer({ motion }: AnimatedPlayerProps) {
       currentState.current = state;
     }
 
-    if (state !== 'IDLE') {
-      const action = actions[MODEL.clips[state]];
+    // Cadence du clip calée sur la vitesse sol réelle (anti foot-sliding)
+    const clip = MODEL.clips[state];
+    if (clip.naturalSpeed > 0) {
+      const action = actions[clip.name];
       if (action) {
         action.timeScale = THREE.MathUtils.clamp(
-          speed / MODEL.naturalRunSpeed,
+          speed / clip.naturalSpeed,
           0.6,
           2.0,
         );

@@ -38,9 +38,11 @@ Critère de sortie : un joueur court d'un point A à un point B avec une animati
 - [x] Pipeline GLTF animé en place : `components/three/AnimatedPlayer.tsx` charge `public/models/player.glb`, crossfade IDLE/RUN/SPRINT, timeScale calé sur la vitesse réelle (anti foot-sliding). Remplacer l'asset = déposer un .glb + ajuster le bloc `MODEL` (noms de clips, orientation, échelle)
 - [x] Modèle de dev provisoire : Soldier.glb (exemples three.js, clips Idle/Walk/Run) — à remplacer par l'asset final
 - [x] **Décision (2026-07-11)** : Mixamo de bout en bout d'abord (personnage du catalogue + animations foot, 0 €) ; le pack [Studio Ochi Animated & Rigged](https://studioochi.com/product/3d-low-poly-football-players-pack-animated-rigged/) (30 €) viendra après pour l'esthétique (maillots/équipes + foule) — retarget des clips Mixamo sur ses meshes à ce moment-là
-- [ ] Amine : télécharger les FBX Mixamo (guide fourni) → `assets/mixamo/`
-- [ ] Conversion FBX → GLB multi-clips + intégration dans `AnimatedPlayer` (moi)
-- [ ] Plus tard : achat pack Ochi + retarget des animations validées sur ses meshes
+- [x] FBX Mixamo déposés dans `assets/mixamo/` (character + 8 animations)
+- [x] Conversion FBX → GLB multi-clips via Blender headless (`tools/mixamo_to_glb.py`, Blender 4.5 portable dans `tools/`, gitignoré) : 8 clips (Idle, Run, Sprint, Pass, Shoot, Tackle, Celebrate, GkDive), optimisé 56 Mo → 1,6 Mo (draco + webp 1024px)
+- [x] `AnimatedPlayer` branché sur le nouveau GLB (clips Run/Sprint séparés, vitesses naturelles propres)
+- [ ] Validation visuelle Amine (orientation du modèle + qualité après optimisation draco/simplify)
+- [ ] Plus tard : achat pack Ochi + retarget des animations validées sur ses meshes ; clips Pass/Shoot/Tackle/Celebrate/GkDive seront déclenchés par les TimedAction du MatchScript (phase 1)
 
 ---
 
