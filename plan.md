@@ -82,6 +82,7 @@ Critère de sortie : un joueur court d'un point A à un point B avec une animati
 ## Phase 3 — Diffusion & polish
 - [ ] Page `/broadcast/:fixtureId` 1080p sans HUD interactif → Playwright headless → FFmpeg → RTMP Twitch
 - [ ] Commentaires LLM (couche 2), replays ralentis, home de sélection de match, multi-matchs
+- [ ] Pages match type FotMob/Sofascore (référence produit, pas source de données) : timeline d'événements, compositions visuelles, stats — design à traiter plus tard (Claude design)
 
 ---
 
@@ -92,6 +93,8 @@ Critère de sortie : un joueur court d'un point A à un point B avec une animati
 | 2026-07-11 | Phase 0 commence par le POC 3D (0.A), pas par l'API | La validation API nécessite une clé (action utilisateur) ; le POC est autonome |
 | 2026-07-11 | Placeholder procédural avant Mixamo | Mixamo = téléchargement manuel + retarget Blender ; le POC valide le pipeline waypoints/animation, pas l'asset |
 | 2026-07-11 | Frontend dans `frontend/`, backend dans `backend/` | Monorepo simple, cohérent avec l'architecture CLAUDE.md |
+| 2026-07-11 | Sources données : API-Football (événements/compos/stats live) + TheSportsDB (métadonnées), confirmé face à FotMob/Sofascore/ESPN | Seules API officielles ; FotMob/Sofascore = pas d'API publique (scraping fragile + CGU), ESPN = non documentée. FotMob reste une référence UI |
+| 2026-07-11 | Mouvement de bloc tactique dans le chunk de démo (l'équipe coulisse avec le ballon) | Retour Amine : joueurs trop statiques ; préfigure le scénariste 1B |
 
 ## Points en attente côté Amine
 1. **Clé API-Football** (0.B) — plan Free suffit pour enregistrer les fixtures du spike

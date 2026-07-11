@@ -5,6 +5,7 @@
 
 import type { MatchScriptChunk, PlayerTrack } from './matchScript';
 import type { TimedAction, Waypoint } from './types';
+import { WaypointPath } from './waypointPath';
 
 const DURATION = 60;
 const HOME_TEAM = 1;
@@ -48,15 +49,42 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-/** Errance douce autour du poste : nodes ~toutes les 7 s, retour au poste en fin de boucle */
-function wanderTrack(base: readonly [number, number], amp: number, rng: () => number): Waypoint[] {
+const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+
+/**
+ * Mouvement de bloc tactique + errance individuelle : à chaque node, le
+ * poste de base est décalé vers le ballon (toute l'équipe coulisse
+ * longitudinalement et latéralement, comme un vrai bloc), puis un bruit
+ * individuel s'ajoute par-dessus. Le gardien ne fait que coulisser sur sa
+ * ligne. C'est le comportement que le scénariste (phase 1B) généralisera.
+ */
+function wanderTrack(
+  base: readonly [number, number],
+  amp: number,
+  rng: () => number,
+  ballPath: WaypointPath,
+  isGoalkeeper: boolean,
+): Waypoint[] {
   const [bx, by] = base;
   const pts: Waypoint[] = [wp(0, bx, by), wp(2, bx, by)];
-  for (let k = 0; k < 7; k++) {
-    const t = 8 + k * 7 + (rng() - 0.5) * 4;
-    pts.push(wp(t, bx + (rng() * 2 - 1) * amp, by + (rng() * 2 - 1) * amp));
+  for (let k = 0; k < 9; k++) {
+    const t = 6 + k * 5.5 + (rng() - 0.5) * 3;
+    const ball = ballPath.positionAt(t);
+    const shiftX = isGoalkeeper
+      ? clamp(ball.x * 0.05, -3, 3)
+      : clamp(ball.x * 0.3, -12, 12);
+    const shiftY = isGoalkeeper
+      ? clamp(ball.y * 0.2, -3.5, 3.5)
+      : clamp(ball.y * 0.25, -8, 8);
+    pts.push(
+      wp(
+        t,
+        clamp(bx + shiftX + (rng() * 2 - 1) * amp, -50, 50),
+        clamp(by + shiftY + (rng() * 2 - 1) * amp, -32, 32),
+      ),
+    );
   }
-  pts.push(wp(57, bx, by), wp(DURATION, bx, by));
+  pts.push(wp(56.5, bx, by), wp(DURATION, bx, by));
   return pts;
 }
 
@@ -154,6 +182,26 @@ function attackBall(sign: 1 | -1, t0: number): Waypoint[] {
 }
 
 export function buildDemoChunk(): MatchScriptChunk {
+  const ball: Waypoint[] = [
+    wp(0, 0, 0),
+    wp(2, 0, 0),
+    ...attackBall(1, 2),
+    ...attackBall(-1, 24),
+    // circulation neutre en défense domicile
+    wp(47.5, -29, 0),
+    wp(48.5, -29, 0),
+    wp(50, -39, -9),
+    wp(51, -39, -9),
+    wp(52, -39, 0, 1.5),
+    wp(53, -39, 9),
+    wp(54, -39, 9),
+    wp(55.5, -29, 0),
+    wp(56.5, -29, 0),
+    wp(58.5, 0, 0),
+    wp(DURATION, 0, 0),
+  ];
+  const ballPath = new WaypointPath(ball);
+
   const players: Record<string, PlayerTrack> = {};
 
   for (const [teamId, prefix, mirror] of [
@@ -170,7 +218,7 @@ export function buildDemoChunk(): MatchScriptChunk {
         teamId,
         waypoints: PROTAGONIST_ROLES.has(role)
           ? [] // rempli par les tracks scriptées ci-dessous
-          : wanderTrack(base, WANDER_AMP[role], rng),
+          : wanderTrack(base, WANDER_AMP[role], rng, ballPath, role === 0),
         actions: [],
       };
     }
@@ -195,25 +243,6 @@ export function buildDemoChunk(): MatchScriptChunk {
   // Engagement neutre à t=46 : ST domicile relance, circulation défensive
   players['home-9'].actions.push({ t: 46, type: 'PASS' });
   players['home-6'].actions.push({ t: 48.5, type: 'PASS' }, { t: 56.5, type: 'PASS' });
-
-  const ball: Waypoint[] = [
-    wp(0, 0, 0),
-    wp(2, 0, 0),
-    ...attackBall(1, 2),
-    ...attackBall(-1, 24),
-    // circulation neutre en défense domicile
-    wp(47.5, -29, 0),
-    wp(48.5, -29, 0),
-    wp(50, -39, -9),
-    wp(51, -39, -9),
-    wp(52, -39, 0, 1.5),
-    wp(53, -39, 9),
-    wp(54, -39, 9),
-    wp(55.5, -29, 0),
-    wp(56.5, -29, 0),
-    wp(58.5, 0, 0),
-    wp(DURATION, 0, 0),
-  ];
 
   return {
     fixtureId: 0,
