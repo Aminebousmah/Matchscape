@@ -75,7 +75,22 @@ export function MatchPlayback({ chunks, homeTeamId, ballRef }: MatchPlaybackProp
   }, [chunk]);
 
   useFrame((_, rawDt) => {
-    const rate = useMatchStore.getState().playbackRate;
+    const store = useMatchStore.getState();
+
+    // saut demandé par le menu de highlights
+    if (store.seekTarget !== null) {
+      const target = store.seekTarget;
+      useMatchStore.setState({ seekTarget: null });
+      globalTime.current = target;
+      let next = 0;
+      while (next < chunks.length - 1 && chunks[next].simTimeEnd <= target) next++;
+      if (next !== chunkIdx) {
+        setChunkIdx(next);
+        return;
+      }
+    }
+
+    const rate = store.playbackRate;
     const dt = Math.min(rawDt, 0.1) * rate;
     globalTime.current += dt;
 

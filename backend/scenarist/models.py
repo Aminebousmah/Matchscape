@@ -113,10 +113,29 @@ class ReplayTeamMeta(StrictModel):
     isHome: bool
 
 
+class TimelineEntry(StrictModel):
+    """Événement réel extrait d'API-Football (données brutes, non générées) —
+    alimente le menu de highlights et le fil de commentaires."""
+
+    simTime: float
+    minute: int
+    extraMinute: int | None = None
+    type: EventType
+    teamId: int
+    teamName: str
+    player: str | None = None
+    assist: str | None = None
+    detail: str | None = None
+    comments: str | None = None
+    isHighlight: bool
+    cancelled: bool = False  # but annulé par la VAR : listé mais non joué
+
+
 class MatchReplayFile(StrictModel):
     """Format du fichier consommé par le renderer (public/demo/match.json)."""
 
     fixtureId: int
     teams: list[ReplayTeamMeta]
     duration: float
+    timeline: list[TimelineEntry]
     chunks: list[MatchScriptChunk]

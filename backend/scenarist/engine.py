@@ -29,6 +29,7 @@ from .models import (
     ReplayTeamMeta,
     TeamLineup,
     TimedAction,
+    TimelineEntry,
     Waypoint,
 )
 from .normalize import cancel_var_goals
@@ -97,6 +98,7 @@ class EngineState:
 class Scenarist:
     def __init__(self, match: MatchInfo, events: list[NormalizedEvent], seed: int = 1234):
         self.match = match
+        self.raw_events = events  # tous les événements API, avant filtrage VAR
         self.events = cancel_var_goals(events)
         self.rng = random.Random(seed)
         self.chunks: list[MatchScriptChunk] = []
@@ -256,29 +258,59 @@ class Scenarist:
         self._emit(t0, t1, "RESTART", ball, involved, actions)
 
     def _possession(self, t0: float, dur: float) -> None:
-        """Phase de possession synthétique pondérée par les stats."""
+        """Phase de possession synthétique pondérée par les stats.
+
+        Circulation réaliste : le porteur conduit brièvement le ballon (le
+        ballon suit ses pieds), puis passe — la passe est un segment RAPIDE
+        (~0,4 s, donc bien plus vif qu'une course), avec parfois un léger
+        rebond. Le collectif progresse vers le but adverse.
+        """
         home_id = self.match.home.team_id
         away_id = self.match.away.team_id
         p_home = self.match.stats[home_id].possession_pct / 100.0
         team_id = home_id if self.rng.random() < p_home else away_id
+        d = self._attack_dir(team_id)
 
         candidates = [p for p in self.on_pitch[team_id] if p != self._gk(team_id)]
         carriers = self.rng.sample(candidates, k=min(4, len(candidates)))
+
         t1 = t0 + dur
         bx, by = self.state.ball
         ball = [Waypoint(t=t0, x=bx, y=by)]
         actions: dict[int, list[TimedAction]] = {}
-        leg = dur / (len(carriers) + 1)
+
+        PASS_TIME = 0.4  # une passe est vive : ~0,4 s quelle que soit la distance
+        prev_x, prev_y = bx, by
         t = t0
-        # premier temps : le ballon rejoint le premier porteur
+        n = len(carriers)
+        leg = (dur - PASS_TIME) / n
         for i, pid in enumerate(carriers):
-            px, py = self.state.positions.get(pid, self.bases[pid])
-            t += leg
-            ball.append(Waypoint(t=t - leg * 0.3, x=px, y=py))
-            ball.append(Waypoint(t=t, x=px, y=py))  # temps de contrôle
-            if i < len(carriers) - 1:
-                actions.setdefault(pid, []).append(TimedAction(t=t, type="PASS"))
-        ball.append(Waypoint(t=t1, x=ball[-1].x, y=ball[-1].y))
+            base = self.bases[pid]
+            # position du porteur : son poste, légèrement avancé vers le but
+            tx = clamp(base[0] + d * self.rng.uniform(2, 8), -50, 50)
+            ty = clamp(base[1] + self.rng.uniform(-6, 6), -32, 32)
+
+            # 1) passe RAPIDE (le porteur précédent joue le ballon)
+            t_pass = t + PASS_TIME
+            long_ball = abs(tx - prev_x) + abs(ty - prev_y) > 22
+            if long_ball:  # ballon aérien sur les longues passes
+                ball.append(Waypoint(t=(t + t_pass) / 2, x=(prev_x + tx) / 2, y=(prev_y + ty) / 2, z=1.8))
+            ball.append(Waypoint(t=t_pass, x=tx, y=ty))
+            if i > 0:
+                # le passeur précédent déclenche l'animation au départ du ballon
+                prev_pid = carriers[i - 1]
+                actions.setdefault(prev_pid, []).append(TimedAction(t=t, type="PASS"))
+
+            # 2) conduite de balle : le ballon avance vers le but avec le porteur
+            drive_end = t + leg
+            dx = clamp(tx + d * self.rng.uniform(3, 9), -50, 50)
+            dy = clamp(ty + self.rng.uniform(-4, 4), -32, 32)
+            ball.append(Waypoint(t=drive_end, x=dx, y=dy))
+
+            prev_x, prev_y = dx, dy
+            t = drive_end
+
+        ball.append(Waypoint(t=t1, x=prev_x, y=prev_y))
         self._emit(t0, t1, "OPEN_PLAY", ball, None, actions)
 
     def _attack(
@@ -358,10 +390,11 @@ class Scenarist:
             ]
             sx, sy = self.state.positions.get(scorer, self.bases[scorer])
             involved = {
+                # marche d'approche calme sur toute la mise en place (jamais un
+                # sprint, même si le buteur part de loin)
                 scorer: [
                     Waypoint(t=t0, x=sx, y=sy),
-                    Waypoint(t=t0 + 5, x=spot[0] - d * 5, y=0.0),
-                    Waypoint(t=t_shot - 1, x=spot[0] - d * 5, y=0.0),
+                    Waypoint(t=t_shot - 1.5, x=spot[0] - d * 4, y=0.0),
                     Waypoint(t=t_shot, x=spot[0] - d * 0.5, y=0.0),
                     Waypoint(t=t_shot + 2, x=spot[0], y=0.0),
                 ]
@@ -461,6 +494,33 @@ class Scenarist:
     def _team_name(self, team_id: int) -> str:
         return self.match.home.name if team_id == self.match.home.team_id else self.match.away.name
 
+    def _build_timeline(self) -> list[TimelineEntry]:
+        """Timeline des événements réels (données API brutes) pour le HUD et
+        le menu de highlights. Inclut le but annulé VAR (marqué cancelled)."""
+        kept_keys = {(e.minute, e.extra_minute, e.type, e.player_id) for e in self.events}
+        highlight_types = {"GOAL", "CARD", "SUBST", "VAR"}
+        entries: list[TimelineEntry] = []
+        for ev in self.raw_events:
+            key = (ev.minute, ev.extra_minute, ev.type, ev.player_id)
+            cancelled = ev.type == "GOAL" and key not in kept_keys
+            entries.append(
+                TimelineEntry(
+                    simTime=ev.sim_time,
+                    minute=ev.minute,
+                    extraMinute=ev.extra_minute,
+                    type=ev.type,
+                    teamId=ev.team_id,
+                    teamName=self._team_name(ev.team_id),
+                    player=ev.player_name,
+                    assist=ev.assist_player_name,
+                    detail=ev.detail,
+                    comments=ev.comments,
+                    isHighlight=ev.type in highlight_types,
+                    cancelled=cancelled,
+                )
+            )
+        return entries
+
     # ---------- timeline ----------
 
     def _fill_until(self, target: float) -> None:
@@ -536,5 +596,6 @@ class Scenarist:
                 ReplayTeamMeta(id=self.match.away.team_id, name=self.match.away.name, isHome=False),
             ],
             duration=self.chunks[-1].simTimeEnd,
+            timeline=self._build_timeline(),
             chunks=self.chunks,
         )

@@ -32,11 +32,19 @@ export default function Scene() {
         if (replay) {
           const home = replay.teams.find((t) => t.isHome) ?? replay.teams[0];
           const away = replay.teams.find((t) => !t.isHome) ?? replay.teams[1];
-          useMatchStore.setState({ teams: { home: home.name, away: away.name } });
+          useMatchStore.setState({
+            teams: { home: home.name, away: away.name },
+            homeTeamId: home.id,
+            timeline: replay.timeline ?? [],
+          });
           setMatch({ chunks: replay.chunks, homeTeamId: home.id });
         } else {
           // pas de match généré : boucle de démo locale
-          useMatchStore.setState({ teams: { home: 'Bleus', away: 'Rouges' } });
+          useMatchStore.setState({
+            teams: { home: 'Bleus', away: 'Rouges' },
+            homeTeamId: 1,
+            timeline: [],
+          });
           setMatch({ chunks: [buildDemoChunk()], homeTeamId: 1 });
         }
       })

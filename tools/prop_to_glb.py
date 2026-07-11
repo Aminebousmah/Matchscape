@@ -23,6 +23,8 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--src", required=True)
     p.add_argument("--out", required=True)
+    p.add_argument("--drop-larger", type=float, default=1e9,
+                   help="supprime les meshes dont l'empreinte depasse N (skybox/sol parasite)")
     return p.parse_args(argv)
 
 
@@ -39,6 +41,18 @@ def main() -> None:
         bpy.ops.wm.obj_import(filepath=str(src))
     else:
         raise SystemExit(f"format non gere : {src.suffix}")
+
+    # drop des meshes geants (plan/skybox parasite gonflant le bbox)
+    to_drop = [
+        o for o in bpy.data.objects
+        if o.type == "MESH" and max(o.dimensions.x, o.dimensions.y) > args.drop_larger
+    ]
+    if to_drop:
+        bpy.ops.object.select_all(action="DESELECT")
+        for o in to_drop:
+            o.select_set(True)
+        bpy.ops.object.delete()
+        print(f"[drop] {len(to_drop)} mesh(es) geant(s) supprime(s)")
 
     # bounding box monde de tous les meshes
     lo = [float("inf")] * 3

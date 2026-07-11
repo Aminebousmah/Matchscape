@@ -122,6 +122,32 @@ def test_substitution_swaps_player(replay):
         assert "p20014" in chunk.players, "Nadir devrait être entré"
 
 
+def test_timeline_mirrors_api_events(replay):
+    # 11 événements bruts API (dont le but annulé + l'événement VAR)
+    assert len(replay.timeline) == 11
+    goals = [e for e in replay.timeline if e.type == "GOAL"]
+    assert len(goals) == 5  # 12' 38' 61'(annulé) 74' 88' — tous listés, brut API
+    cancelled = [e for e in replay.timeline if e.cancelled]
+    assert len(cancelled) == 1
+    assert cancelled[0].minute == 61
+    # données brutes conservées telles quelles
+    ramos = next(e for e in replay.timeline if e.player == "G. Ramos" and e.detail == "Penalty")
+    assert ramos.teamName == "Paris Saint Germain"
+    assert ramos.minute == 74
+    # ordre chronologique + temps de saut dans les bornes du replay
+    times = [e.simTime for e in replay.timeline]
+    assert times == sorted(times)
+    assert all(0 <= e.simTime <= replay.duration for e in replay.timeline)
+
+
+def test_timeline_highlights_flagged(replay):
+    highlights = [e for e in replay.timeline if e.isHighlight]
+    # buts, cartons, remplacements, VAR sont tous des highlights
+    assert len(highlights) == len(replay.timeline)
+    types = {e.type for e in highlights}
+    assert types == {"GOAL", "CARD", "SUBST", "VAR"}
+
+
 def test_commentaries_present(replay):
     comments = [c.commentary for c in replay.chunks if c.commentary]
     assert any("BUT" in c for c in comments)

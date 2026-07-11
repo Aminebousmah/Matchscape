@@ -41,10 +41,27 @@ export interface ReplayTeamMeta {
   isHome: boolean;
 }
 
+/** Événement réel extrait d'API-Football (données brutes, non générées) */
+export interface TimelineEntry {
+  simTime: number;
+  minute: number;
+  extraMinute?: number;
+  type: 'GOAL' | 'CARD' | 'SUBST' | 'VAR';
+  teamId: number;
+  teamName: string;
+  player?: string;
+  assist?: string;
+  detail?: string;
+  comments?: string;
+  isHighlight: boolean;
+  cancelled?: boolean;
+}
+
 /** Fichier de rejeu complet émis par `python -m scenarist.generate` */
 export interface MatchReplayFile {
   fixtureId: number;
   teams: ReplayTeamMeta[];
   duration: number;
+  timeline: TimelineEntry[];
   chunks: MatchScriptChunk[];
 }

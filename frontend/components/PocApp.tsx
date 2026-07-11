@@ -1,7 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useMemo } from 'react';
 import { useMatchStore } from '@/lib/matchStore';
+import { HighlightsMenu } from './HighlightsMenu';
 
 // Le Canvas R3F touche à WebGL/window : rendu client uniquement.
 const Scene = dynamic(() => import('./three/Scene'), {
@@ -32,12 +34,39 @@ function Scoreboard() {
   );
 }
 
+/** Bandeau : dernier événement RÉEL extrait d'API-Football atteint (données
+ *  brutes, pas le texte généré) — pour vérifier la correspondance au match. */
 function CommentaryBanner() {
-  const commentary = useMatchStore((s) => s.commentary);
-  if (!commentary) return null;
+  const timeline = useMatchStore((s) => s.timeline);
+  const minute = useMatchStore((s) => s.minute);
+
+  const current = useMemo(() => {
+    const reached = timeline.filter((e) => e.minute <= minute && !e.cancelled);
+    return reached.length ? reached[reached.length - 1] : null;
+  }, [timeline, minute]);
+
+  if (!current) return null;
+  const icon =
+    current.type === 'GOAL'
+      ? '⚽'
+      : current.type === 'CARD'
+        ? current.detail === 'Red Card'
+          ? '🟥'
+          : '🟨'
+        : current.type === 'SUBST'
+          ? '🔁'
+          : '📺';
+  const min = current.extraMinute ? `${current.minute}+${current.extraMinute}'` : `${current.minute}'`;
+
   return (
-    <div className="pointer-events-none absolute bottom-6 left-1/2 max-w-[80%] -translate-x-1/2 rounded bg-black/70 px-4 py-2 font-mono text-sm text-white">
-      {commentary}
+    <div className="pointer-events-none absolute bottom-6 left-1/2 max-w-[80%] -translate-x-1/2 rounded bg-black/75 px-4 py-2 font-mono text-sm text-white">
+      <span className="mr-2">{icon}</span>
+      <span className="text-yellow-300">{min}</span>{' '}
+      <span className="font-bold">{current.player}</span>
+      {current.assist && <span className="text-white/70"> ({current.assist})</span>}
+      {current.detail && <span className="text-white/70"> · {current.detail}</span>}
+      <span className="ml-2 text-white/50">{current.teamName}</span>
+      <span className="ml-2 rounded bg-white/10 px-1 text-[10px] text-white/50">API-Football</span>
     </div>
   );
 }
@@ -81,6 +110,7 @@ export function PocApp() {
         <div className="text-xs text-white/60">Reconstitution simulée · scénariste v0</div>
       </div>
       <Scoreboard />
+      <HighlightsMenu />
       <CommentaryBanner />
       <SpeedControls />
     </div>

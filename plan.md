@@ -60,10 +60,17 @@ Critère de sortie : un joueur court d'un point A à un point B avec une animati
 - [ ] Variation des patterns d'attaque (aile gauche/droite/axe, contre-attaque vs possession)
 - ✅ Critère : un match complet du week-end (payloads réels) → suite de chunks cohérente de bout en bout — **v0 validée sur le match test, reste à valider sur un vrai match (clé API)**
 
-### 1.C bis — Décor stade ← **validation visuelle Amine requise**
-- [x] Modèle stade importé (FBX 34 Mo → GLB 4,3 Mo, draco+webp), composant `Stadium.tsx` avec bouton d'affichage
-- [ ] **Régler l'échelle/rotation/offset** (constantes `STADIUM` dans `Stadium.tsx`) : l'empreinte brute est 770×770 unités, échelle estimée à 0,32 sans visuel — Amine doit dire si la pelouse du modèle coïncide avec nos lignes, sinon j'ajuste depuis une capture
-- [ ] Décider : garder notre `Pitch` (lignes) par-dessus, ou masquer notre pelouse si le modèle en fournit une correcte
+### 1.C bis — Décor stade ← **validation visuelle Amine**
+- [x] Modèle stade importé + nettoyé (plan/skybox géant de 770 u retiré → vrai stade 19×23 u, pelouse centrée à l'origine). Diagnostic via rendus Blender headless (`tools/render_stadium.py`, `measure_meshes.py`) : c'est un bol à tribunes, pas une pelouse plate
+- [x] Placement : échelle 7,8 + rotation 90° → les tribunes entourent notre terrain (105×68). Corrige le retour Amine (« stade au centre » = il était rétréci à 0,32 au lieu d'agrandi)
+- [ ] Réglage fin visuel Amine (constantes `STADIUM` dans `Stadium.tsx`) : hauteur des tribunes, alignement pelouse
+
+### 1.C ter — Menu highlights + commentaires API réels ← **livré (2026-07-11)**
+- [x] Backend : `timeline` des événements réels API-Football dans le fichier de rejeu (données brutes : minute, type, joueur, passeur, `detail`, `comments`, but VAR marqué `cancelled`). 2 tests pytest
+- [x] Frontend : menu de highlights cliquable (`HighlightsMenu.tsx`) → saut au moment (`seekTo` dans le store, consommé par `MatchPlayback`) ; bandeau de commentaire affichant le **dernier événement réel extrait de l'API** (tag « API-Football »), plus mon texte généré
+- [x] Ballon plus réaliste : passes vives (~0,4 s, plus rapides qu'une course), ballon aérien sur les longues passes, conduite vers le but — fin du « avance-stop-avance »
+
+### 1.C — Renderer complet
 
 ### 1.C — Renderer complet
 - [x] **Démarré en avance (2026-07-11)** : format `MatchScriptChunk` typé (`lib/matchScript.ts`), rejeu complet par `MatchPlayback` (22 joueurs clonés SkeletonUtils + ballon avec hauteur z, une seule boucle useFrame), TimedAction → clips one-shot (PASS/SHOOT/TACKLE/CELEBRATE/GK_DIVE), chunk de démo scripté 60 s (`lib/demoChunk.ts` : 2 attaques + buts + circulation, testé : bornes terrain, vitesses ≤ 10,5 m/s, boucle sans téléportation)
