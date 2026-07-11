@@ -184,7 +184,12 @@ class Scenarist:
                         nx, ny = self._step_toward(prev, (clamp(tx, -50, 50), clamp(ty, -32, 32)), (t1 - t0) / n_nodes)
                         wps.append(Waypoint(t=t, x=nx, y=ny))
                 self.state.positions[pid] = (wps[-1].x, wps[-1].y)
-                players[f"p{pid}"] = PlayerTrack(teamId=team_id, waypoints=wps, actions=[])
+                players[f"p{pid}"] = PlayerTrack(
+                    teamId=team_id,
+                    waypoints=wps,
+                    actions=[],
+                    isGoalkeeper=True if pid == self._gk(team_id) else None,
+                )
         return players
 
     def _emit(

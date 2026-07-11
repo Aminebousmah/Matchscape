@@ -41,11 +41,16 @@ const ACTION_CLIPS: Record<ActionType, string> = {
 const FADE_DURATION = 0.25;
 const ONESHOT_FADE = 0.15;
 
+/** Variantes d'idle joueur de champ — tirées au sort par instance pour
+ *  éviter 20 joueurs parfaitement synchronisés */
+const IDLE_VARIANTS = ['Idle', 'Idle2', 'Idle3'];
+
 interface AnimatedPlayerProps {
   motion: PlayerMotion;
+  isGoalkeeper?: boolean;
 }
 
-export function AnimatedPlayer({ motion }: AnimatedPlayerProps) {
+export function AnimatedPlayer({ motion, isGoalkeeper = false }: AnimatedPlayerProps) {
   const group = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(MODEL.url);
 
@@ -66,6 +71,17 @@ export function AnimatedPlayer({ motion }: AnimatedPlayerProps) {
   const currentState = useRef<PlayerAnimState | null>(null);
   const oneShot = useRef<{ action: THREE.AnimationAction; remaining: number } | null>(null);
 
+  // Idle propre à l'instance (gardien ou variante aléatoire) + désynchronisation
+  const idleClip = useMemo(() => {
+    if (isGoalkeeper && animations.some((a) => a.name === 'GkIdle')) return 'GkIdle';
+    const pick = IDLE_VARIANTS[Math.floor(Math.random() * IDLE_VARIANTS.length)];
+    return animations.some((a) => a.name === pick) ? pick : 'Idle';
+  }, [isGoalkeeper, animations]);
+  const phaseOffset = useMemo(() => Math.random() * 2, []);
+
+  const clipNameFor = (state: PlayerAnimState): string =>
+    state === 'IDLE' ? idleClip : MODEL.clips[state].name;
+
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 0.1);
 
@@ -77,7 +93,7 @@ export function AnimatedPlayer({ motion }: AnimatedPlayerProps) {
       const action = actions[clipName];
       if (action) {
         const prev = currentState.current
-          ? actions[MODEL.clips[currentState.current].name]
+          ? actions[clipNameFor(currentState.current)]
           : null;
         oneShot.current?.action.fadeOut(ONESHOT_FADE);
         action.reset();
@@ -106,12 +122,13 @@ export function AnimatedPlayer({ motion }: AnimatedPlayerProps) {
     const state = animStateForSpeed(speed);
 
     if (state !== currentState.current) {
-      const nextAction = actions[MODEL.clips[state].name];
+      const nextAction = actions[clipNameFor(state)];
       const prevAction = currentState.current
-        ? actions[MODEL.clips[currentState.current].name]
+        ? actions[clipNameFor(currentState.current)]
         : null;
       if (nextAction && nextAction !== prevAction) {
         nextAction.reset().fadeIn(FADE_DURATION).play();
+        nextAction.time = phaseOffset % nextAction.getClip().duration;
         prevAction?.fadeOut(FADE_DURATION);
       }
       currentState.current = state;

@@ -75,8 +75,25 @@ boxe un centre, mur sur coup franc, rentrée des équipes au coup d'envoi,
 banc de touche. À traiter au moment du swap esthétique Ochi (retarget des
 clips Mixamo validés + leurs animations cuites pour la figuration).
 
-## Récap : ce que tu télécharges maintenant
+## État au 2026-07-11 (2e session de téléchargement intégrée)
 
-Si tu veux le meilleur ratio effort/résultat en une session Mixamo
-(~15 fichiers, mêmes réglages qu'avant) : **tout le Tier 1 + Tier 2**.
-Le Tier 3 peut suivre dans une deuxième session.
+**42 clips dans le GLB.** Intégrés en plus des tiers prévus : diagonales
+avant/arrière (JogFwdDiag/JogBackDiag ×2), Dribble + Dribble2 (porteur de
+balle), Penalty dédié, Shoot2/Header2/Tackle2/GkCatch2/GkDive2 (variantes
+anti-répétition), et un set gardien complet (GkIdle, GkDirect, GkSidestep,
+GkCatch, GkBlock, GkMiss, GkThrow, GkKick, GkPass, GkPlace).
+
+**Encore manquants (prochaine session Mixamo) :**
+- `walk.fbx` — "Walking" ← **le plus important restant** (replacements lents)
+- `turn.fbx` — "Left/Right Turn"
+- `argue.fbx` — "Arguing" (contestation carton)
+- `celebrate_2.fbx` / `celebrate_team.fbx` — variantes de célébration
+- `disappointed.fbx` — "Defeated" (équipe qui encaisse)
+- `ref_whistle.fbx` — approximation arbitre
+
+**Doublons écartés (dispo dans `new assets/`, non intégrés) :** le dossier
+`pack/` entier (mêmes clips sans skin + personnage Ch38 — réutilisable pour
+varier les corps plus tard), Header.fbx/Header Soccerball (1), Goalie Throw
+(= Overhand Throw), Kick Up/Stall ×4/Kneeing ×2/Soccer Spin/Scissor Kick/
+Transition (freestyle, hors match — Scissor Kick gardé en idée tier 4),
+variantes (1)/(3) surnuméraires des clips gardien.

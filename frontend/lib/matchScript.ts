@@ -18,6 +18,8 @@ export interface PlayerTrack {
   teamId: number;
   waypoints: Waypoint[];
   actions: TimedAction[];
+  /** Le gardien utilise son propre jeu de clips (GkIdle, GkSidestep…) */
+  isGoalkeeper?: boolean;
 }
 
 export interface MatchScriptChunk {

@@ -91,6 +91,7 @@ class PlayerTrack(StrictModel):
     teamId: int
     waypoints: list[Waypoint]
     actions: list[TimedAction]
+    isGoalkeeper: bool | None = None
 
 
 class MatchScriptChunk(StrictModel):

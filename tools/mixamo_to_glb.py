@@ -12,11 +12,16 @@ AnimatedPlayer (Idle, Run, Sprint, Pass, Shoot, Tackle, Celebrate, GkDive).
 """
 
 import argparse
-import math
+import re
 import sys
 from pathlib import Path
 
 import bpy
+
+# Mixamo namespace les bones par personnage ("mixamorig:", "mixamorig5:"...).
+# Les animations telechargees avec un personnage different du character.fbx
+# de base ne s'appliqueraient pas sans renommage des chemins de fcurves.
+_MIXAMO_NS = re.compile(r"mixamorig\d*:")
 
 # nom de fichier -> nom de clip dans le GLB (fichiers absents ignores).
 # Inventaire complet et priorites : docs/animations.md
@@ -33,18 +38,39 @@ CLIP_NAMES = {
     # Tier 1 - locomotion
     "walk": "Walk",
     "jog_back": "JogBack",
+    "jog_fwd_diag": "JogFwdDiag",
+    "jog_fwd_diag_2": "JogFwdDiag2",
+    "jog_back_diag": "JogBackDiag",
+    "jog_back_diag_2": "JogBackDiag2",
     "strafe_left": "StrafeLeft",
     "strafe_right": "StrafeRight",
     "idle_2": "Idle2",
+    "idle_3": "Idle3",
     "turn": "Turn",
+    "dribble": "Dribble",
+    "dribble_2": "Dribble2",
     # Tier 2 - gestes football
     "header": "Header",
+    "header_2": "Header2",
     "receive": "Receive",
     "long_pass": "LongPass",
+    "shoot_2": "Shoot2",
+    "penalty": "Penalty",
     "throw_in": "ThrowIn",
+    "tackle_2": "Tackle2",
+    # Gardien
     "gk_idle": "GkIdle",
+    "gk_direct": "GkDirect",
+    "gk_sidestep": "GkSidestep",
     "gk_catch": "GkCatch",
+    "gk_catch_2": "GkCatch2",
+    "gk_dive_2": "GkDive2",
+    "gk_block": "GkBlock",
+    "gk_miss": "GkMiss",
     "gk_throw": "GkThrow",
+    "gk_kick": "GkKick",
+    "gk_pass": "GkPass",
+    "gk_place": "GkPlace",
     # Tier 3 - evenements
     "fall": "Fall",
     "get_up": "GetUp",
@@ -61,9 +87,10 @@ CLIP_NAMES = {
 # des hanches) est aplati, sinon le joueur avance puis se teleporte en
 # arriere a chaque boucle du clip.
 IN_PLACE_CLIPS = {
-    "Idle", "Run", "Sprint",
-    "Walk", "JogBack", "StrafeLeft", "StrafeRight", "Idle2",
-    "GkIdle", "Receive", "Disappointed",
+    "Idle", "Idle2", "Idle3", "Run", "Sprint", "Walk",
+    "JogBack", "JogFwdDiag", "JogFwdDiag2", "JogBackDiag", "JogBackDiag2",
+    "StrafeLeft", "StrafeRight", "Dribble", "Dribble2",
+    "GkIdle", "GkDirect", "GkSidestep", "Receive", "Disappointed",
 }
 
 
@@ -111,6 +138,31 @@ def reset_scene() -> None:
     bpy.ops.wm.read_factory_settings(use_empty=True)
 
 
+def bone_prefix(armature: bpy.types.Object) -> str:
+    """Namespace Mixamo des bones de l'armature ('' si aucun)."""
+    for bone in armature.data.bones:
+        m = _MIXAMO_NS.match(bone.name)
+        if m:
+            return m.group(0)
+    return ""
+
+
+def retarget_namespace(action: bpy.types.Action, base_prefix: str) -> None:
+    """Renomme les chemins de fcurves vers le namespace de l'armature de base.
+
+    Squelette Mixamo identique bone a bone, seul le prefixe change : un
+    simple renommage suffit (pas un vrai retarget).
+    """
+    renamed = 0
+    for fc in action.fcurves:
+        new_path = _MIXAMO_NS.sub(base_prefix, fc.data_path)
+        if new_path != fc.data_path:
+            fc.data_path = new_path
+            renamed += 1
+    if renamed:
+        print(f"[ns] {action.name}: {renamed} fcurves -> '{base_prefix}'")
+
+
 def import_fbx(path: Path) -> list[bpy.types.Object]:
     before = set(bpy.data.objects)
     bpy.ops.import_scene.fbx(
@@ -149,7 +201,8 @@ def main() -> None:
 
     base_objects = import_fbx(character)
     base_armature = find_armature(base_objects)
-    print(f"[base] character.fbx -> armature '{base_armature.name}'")
+    base_prefix = bone_prefix(base_armature)
+    print(f"[base] character.fbx -> armature '{base_armature.name}' (ns '{base_prefix}')")
 
     if base_armature.animation_data is None:
         base_armature.animation_data_create()
@@ -179,6 +232,7 @@ def main() -> None:
         action.name = clip_name
         action.use_fake_user = True
 
+        retarget_namespace(action, base_prefix)
         if clip_name in IN_PLACE_CLIPS:
             strip_root_motion(action)
 

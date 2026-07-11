@@ -6,5 +6,6 @@ node_modules/
 data/
 tools/blender*
 assets/mixamo/*.fbx
+new assets/
 __pycache__/
 .venv/

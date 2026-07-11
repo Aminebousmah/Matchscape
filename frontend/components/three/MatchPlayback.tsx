@@ -21,6 +21,7 @@ const Y_AXIS = new THREE.Vector3(0, 1, 0);
 interface Entry {
   id: string;
   teamId: number;
+  isGoalkeeper: boolean;
   path: WaypointPath;
   actions: TimedAction[];
   cursor: { i: number };
@@ -49,6 +50,7 @@ export function MatchPlayback({ chunks, homeTeamId, ballRef }: MatchPlaybackProp
       Object.entries(chunk.players).map(([id, track]) => ({
         id,
         teamId: track.teamId,
+        isGoalkeeper: track.isGoalkeeper ?? false,
         path: new WaypointPath(track.waypoints),
         actions: [...track.actions].sort((a, b) => a.t - b.t),
         cursor: { i: 0 },
@@ -153,7 +155,7 @@ export function MatchPlayback({ chunks, homeTeamId, ballRef }: MatchPlaybackProp
             />
           </mesh>
           <Suspense fallback={<PlayerRig motion={entry.motion} />}>
-            <AnimatedPlayer motion={entry.motion} />
+            <AnimatedPlayer motion={entry.motion} isGoalkeeper={entry.isGoalkeeper} />
           </Suspense>
         </group>
       ))}

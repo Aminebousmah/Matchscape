@@ -220,6 +220,7 @@ export function buildDemoChunk(): MatchScriptChunk {
           ? [] // rempli par les tracks scriptées ci-dessous
           : wanderTrack(base, WANDER_AMP[role], rng, ballPath, role === 0),
         actions: [],
+        ...(role === 0 ? { isGoalkeeper: true } : {}),
       };
     }
   }
