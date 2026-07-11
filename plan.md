@@ -74,8 +74,8 @@ Critère de sortie : un joueur court d'un point A à un point B avec une animati
 ---
 
 ## Phase 2 — Live (2 semaines)
-- [ ] Souscription plan Pro API-Football (~25 €/mois) — **décision budget Amine**
-- [ ] Poller live (15-30 s) + déduplication `(fixture_id, event_type, minute, player_id)` + diff engine → Redis pub/sub
+- [ ] **Projet perso sans but lucratif (décision 2026-07-11) : plan gratuit API-Football (100 req/jour)** → poll à 60 s = 1 match live/jour, compatible avec le buffer 60-120 s. Plan Pro seulement si multi-matchs un jour
+- [ ] Poller live (60 s en tier gratuit) + déduplication `(fixture_id, event_type, minute, player_id)` + diff engine → Redis pub/sub
 - [ ] WebSocket + buffer de chunks (~60-90 s de retard assumé)
 - [ ] Cas limites : mi-temps, prolongations, rollback VAR
 
@@ -97,6 +97,6 @@ Critère de sortie : un joueur court d'un point A à un point B avec une animati
 | 2026-07-11 | Mouvement de bloc tactique dans le chunk de démo (l'équipe coulisse avec le ballon) | Retour Amine : joueurs trop statiques ; préfigure le scénariste 1B |
 
 ## Points en attente côté Amine
-1. **Clé API-Football** (0.B) — plan Free suffit pour enregistrer les fixtures du spike
-2. Budget plan Pro API-Football avant la phase 2
+1. **Clé API-Football** (0.B) — plan gratuit, aucune CB requise ; suffit pour tout le développement et 1 match live/jour
+2. Achat pack Ochi (~30 €) quand on attaque l'esthétique — seule dépense prévue du projet
 3. Autorisation explicite avant toute PR GitHub (aucun push sans accord)
