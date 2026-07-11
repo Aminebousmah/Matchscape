@@ -133,6 +133,42 @@ def _sample(wps, t):
     return (prev.x, prev.y)
 
 
+def _roles_by_pid():
+    info, _ = load_match(FIXTURE)
+    roles = {}
+    for lineup in (info.home, info.away):
+        for p in lineup.start_xi + lineup.substitutes:
+            roles[f"p{p.id}"] = (p.pos, lineup.team_id)
+    return roles, info.home.team_id
+
+
+def test_defenders_stay_behind_forwards(replay):
+    """Différenciation par poste : sur la durée, les défenseurs d'une équipe
+    se tiennent côté but par rapport à ses attaquants (feuille de match)."""
+    roles, home_id = _roles_by_pid()
+    open_play = [c for c in replay.chunks if c.phase in ("OPEN_PLAY", "GOAL_SEQUENCE")]
+    ok = 0
+    for c in open_play:
+        tm = (c.simTimeStart + c.simTimeEnd) / 2
+        for team_id, d in ((home_id, 1), (None, -1)):
+            defs, fwds = [], []
+            for pid, tr in c.players.items():
+                r = roles.get(pid)
+                if not r or (tr.teamId == home_id) != (d == 1):
+                    continue
+                x = _sample(tr.waypoints, tm)[0]
+                if r[0] == "D":
+                    defs.append(x)
+                elif r[0] == "F":
+                    fwds.append(x)
+            if defs and fwds:
+                # défenseurs plus proches de leur but (x*d plus petit) que les attaquants
+                if (sum(defs) / len(defs)) * d < (sum(fwds) / len(fwds)) * d:
+                    ok += 1
+    # vrai dans la grande majorité des phases (des deux côtés)
+    assert ok > len(open_play) * 1.5, f"seulement {ok} configurations D-derrière-F"
+
+
 def test_pressing_present_in_open_play(replay):
     """Grâce aux données StatsBomb : en jeu ouvert, un adversaire doit venir
     presser le porteur (défenseur proche du ballon), pas rester dans son bloc."""

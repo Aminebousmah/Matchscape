@@ -106,15 +106,18 @@ class Scenarist:
 
         self.bases: dict[int, tuple[float, float]] = {}
         self.team_of: dict[int, int] = {}
+        self.role_of: dict[int, str] = {}  # poste feuille de match : G/D/M/F
         self.on_pitch: dict[int, list[int]] = {match.home.team_id: [], match.away.team_id: []}
         for lineup, is_home in ((match.home, True), (match.away, False)):
             bases = formation_bases(lineup, is_home)
             self.bases.update(bases)
             for p in lineup.start_xi:
                 self.team_of[p.id] = lineup.team_id
+                self.role_of[p.id] = p.pos
                 self.on_pitch[lineup.team_id].append(p.id)
             for p in lineup.substitutes:
                 self.team_of[p.id] = lineup.team_id
+                self.role_of[p.id] = p.pos
 
         self.state = EngineState(positions=dict(self.bases))
         # budget de tirs synthétiques = tirs totaux − buts (répartis sur le match)
@@ -154,6 +157,58 @@ class Scenarist:
             prev = w
         return (prev.x, prev.y)
 
+    def _role_target(
+        self,
+        pid: int,
+        team_id: int,
+        base: tuple[float, float],
+        bx: float,
+        by: float,
+        in_possession: bool,
+    ) -> tuple[float, float]:
+        """Position cible d'un joueur selon son POSTE (feuille de match) et la
+        PHASE (avec/sans ballon). C'est ce qui différencie un défenseur d'un
+        attaquant, et une équipe qui attaque d'une équipe qui défend.
+
+        d = sens d'attaque (+x). base = poste dans la formation.
+        - Défenseurs (D) : tiennent une ligne, montent un peu ballon en main,
+          décrochent côté but sans ballon ; suivent peu le ballon en longueur.
+        - Milieux (M) : relais, suivent le ballon, se replacent au centre.
+        - Attaquants (F) : restent hauts ballon en main (profondeur), pressent
+          modérément sans ballon.
+        """
+        d = self._attack_dir(team_id)
+        role = self.role_of.get(pid, "M")
+        bxr, byr = base
+
+        if role == "D":
+            if in_possession:
+                # relance : la ligne monte, s'étire, suit peu le ballon
+                line_x = bxr + d * 9 + (bx - bxr) * 0.20
+            else:
+                # défense : ligne ~13 m côté but par rapport au ballon, jamais
+                # dans son propre but ni au-delà du milieu
+                line_x = bx - d * 13
+                lo, hi = sorted((self._own_goal_x(team_id) + d * 11, d * 2))
+                line_x = clamp(line_x, lo, hi)
+            tx = line_x
+            ty = byr + (by - byr) * (0.30 if not in_possession else 0.22)
+        elif role == "M":
+            fwd = 9 if in_possession else 1
+            pull = 0.42 if in_possession else 0.52
+            tx = bxr + d * fwd + (bx - bxr) * pull
+            ty = byr + (by - byr) * (0.48 if not in_possession else 0.40)
+        else:  # F
+            fwd = 15 if in_possession else 5
+            pull = 0.45 if in_possession else 0.32
+            tx = bxr + d * fwd + (bx - bxr) * pull
+            ty = byr + (by - byr) * 0.38
+
+        return tx, ty
+
+    def _own_goal_x(self, team_id: int) -> float:
+        return -self._attack_dir(team_id) * FIELD_X
+
     def _block_tracks(
         self,
         t0: float,
@@ -189,6 +244,7 @@ class Scenarist:
 
         for team_id, ids in self.on_pitch.items():
             own_goal_x = -self._attack_dir(team_id) * FIELD_X
+            in_possession = ball_team_id is not None and team_id == ball_team_id
             for pid in ids:
                 if pid in involved:
                     wps = involved[pid]
@@ -211,10 +267,7 @@ class Scenarist:
                             tx = bx + gx * 3.5
                             ty = by + (base[1] - by) * 0.15  # léger biais vers son couloir
                         else:
-                            # bloc compact : base décalée vers le ballon (longitudinal
-                            # fort, latéral côté ballon) + compression
-                            tx = base[0] + clamp((bx - base[0]) * 0.35, -18, 18)
-                            ty = base[1] + clamp((by - base[1]) * 0.45, -14, 14)
+                            tx, ty = self._role_target(pid, team_id, base, bx, by, in_possession)
                         prev = (wps[-1].x, wps[-1].y)
                         nx, ny = self._step_toward(
                             prev, (clamp(tx, -51, 51), clamp(ty, -33, 33)), seg_dt
@@ -503,6 +556,8 @@ class Scenarist:
             idx = self.on_pitch[ev.team_id].index(out_id)
             self.on_pitch[ev.team_id][idx] = in_id
             self.bases[in_id] = self.bases[out_id]
+            # le remplaçant reprend le poste du sortant s'il n'a pas le sien
+            self.role_of.setdefault(in_id, self.role_of.get(out_id, "M"))
             self.state.positions[in_id] = self.bases[in_id]
         self.state.pending_commentary.append(
             f"🔁 {ev.minute}e — Changement ({self._team_name(ev.team_id)}) : "
