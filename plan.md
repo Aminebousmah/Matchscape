@@ -35,8 +35,11 @@ Critère de sortie : un joueur court d'un point A à un point B avec une animati
 - En attendant la clé : le schéma `NormalizedEvent` sera écrit d'après la doc publique API-Football et ajusté sur payloads réels ensuite.
 
 ### 0.C — Asset joueur "propre"
-- [ ] Modèle low-poly (800-1500 tris) + clips Mixamo (idle, run, sprint, kick) retargetés dans Blender → GLTF
-- [ ] Remplacer le placeholder procédural du POC
+- [x] Pipeline GLTF animé en place : `components/three/AnimatedPlayer.tsx` charge `public/models/player.glb`, crossfade IDLE/RUN/SPRINT, timeScale calé sur la vitesse réelle (anti foot-sliding). Remplacer l'asset = déposer un .glb + ajuster le bloc `MODEL` (noms de clips, orientation, échelle)
+- [x] Modèle de dev provisoire : Soldier.glb (exemples three.js, clips Idle/Walk/Run) — à remplacer par l'asset final
+- [ ] **Décision d'achat Amine** : pack Sketchfab [Football Soccer Men — Low Poly](https://sketchfab.com/3d-models/football-soccer-men-low-poly-people-7224ac1456a345078be290bffcd2e666) (licence Standard : commercial + dérivés OK, prix visible sur la page) — vérifier avant achat que la version "Independent Animated" contient bien des clips course/idle utilisables
+- [ ] Option complémentaire Mixamo (simple : site web, aucun skill 3D requis — upload FBX rest-pose → auto-rig → choix des anims → download ; je fais toute la conversion/intégration)
+- [ ] Intégrer l'asset final + clips manquants (tacle, frappe, célébration) quand fournis
 
 ---
 

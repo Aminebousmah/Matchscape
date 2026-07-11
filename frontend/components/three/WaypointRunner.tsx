@@ -1,12 +1,13 @@
 'use client';
 
-import { forwardRef, useMemo, useRef } from 'react';
+import { forwardRef, Suspense, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { WaypointPath } from '@/lib/waypointPath';
 import { fieldToWorld } from '@/lib/field';
 import type { Waypoint } from '@/lib/types';
 import { PlayerRig, type PlayerMotion } from './PlayerRig';
+import { AnimatedPlayer } from './AnimatedPlayer';
 
 interface WaypointRunnerProps {
   waypoints: Waypoint[];
@@ -65,7 +66,10 @@ export const WaypointRunner = forwardRef<THREE.Group, WaypointRunnerProps>(
           else if (ref) ref.current = node;
         }}
       >
-        <PlayerRig motion={motion} />
+        {/* rig procédural affiché pendant le chargement du GLB */}
+        <Suspense fallback={<PlayerRig motion={motion} />}>
+          <AnimatedPlayer motion={motion} />
+        </Suspense>
       </group>
     );
   },
