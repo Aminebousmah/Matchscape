@@ -10,6 +10,7 @@ import { fieldToWorld } from '@/lib/field';
 import { useMatchStore } from '@/lib/matchStore';
 import { AnimatedPlayer } from './AnimatedPlayer';
 import { PlayerRig } from './PlayerRig';
+import { Ball } from './Ball';
 
 const BALL_RADIUS = 0.18; // légèrement plus gros que nature, lisible de loin
 const HOME_COLOR = '#2563eb';
@@ -61,6 +62,8 @@ export function MatchPlayback({ chunks, homeTeamId, ballRef }: MatchPlaybackProp
   const ballPath = useMemo(() => new WaypointPath(chunk.ball), [chunk]);
 
   const groups = useRef<Record<string, THREE.Group | null>>({});
+  const ballSpin = useRef<THREE.Group>(null);
+  const lastBallPos = useRef<{ x: number; z: number } | null>(null);
   const globalTime = useRef(0);
   const lastHudMinute = useRef(-1);
   const duration = chunks[chunks.length - 1].simTimeEnd;
@@ -148,6 +151,20 @@ export function MatchPlayback({ chunks, homeTeamId, ballRef }: MatchPlaybackProp
       const bp = ballPath.positionAt(t);
       const [bx, by, bz] = fieldToWorld(bp.x, bp.y, BALL_RADIUS + bp.z);
       ball.position.set(bx, by, bz);
+
+      // rotation de roulement : le ballon tourne autour de l'axe perpendiculaire
+      // à son déplacement au sol, proportionnellement à la distance parcourue.
+      const prev = lastBallPos.current;
+      if (prev && ballSpin.current) {
+        const dx = bx - prev.x;
+        const dz = bz - prev.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > 1e-4) {
+          const axis = new THREE.Vector3(dz, 0, -dx).normalize();
+          ballSpin.current.rotateOnWorldAxis(axis, dist / BALL_RADIUS);
+        }
+      }
+      lastBallPos.current = { x: bx, z: bz };
     }
   });
 
@@ -175,10 +192,18 @@ export function MatchPlayback({ chunks, homeTeamId, ballRef }: MatchPlaybackProp
         </group>
       ))}
       <group ref={ballRef}>
-        <mesh castShadow>
-          <sphereGeometry args={[BALL_RADIUS, 16, 12]} />
-          <meshStandardMaterial color="#f2f2f2" roughness={0.4} />
-        </mesh>
+        <group ref={ballSpin}>
+          <Suspense
+            fallback={
+              <mesh castShadow>
+                <sphereGeometry args={[BALL_RADIUS, 16, 12]} />
+                <meshStandardMaterial color="#f2f2f2" roughness={0.4} />
+              </mesh>
+            }
+          >
+            <Ball radius={BALL_RADIUS} />
+          </Suspense>
+        </group>
       </group>
     </group>
   );
