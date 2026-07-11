@@ -85,7 +85,7 @@ export default function Scene() {
           <Stadium />
         </Suspense>
       )}
-      <Pitch />
+      <Pitch linesOnly={showStadium} />
       {match && (
         <MatchPlayback
           chunks={match.chunks}

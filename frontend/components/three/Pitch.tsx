@@ -70,7 +70,13 @@ function Goal({ side }: { side: 1 | -1 }) {
   );
 }
 
-export function Pitch() {
+interface PitchProps {
+  /** Mode « lignes seules » : pelouse et cages viennent du modèle de stade,
+   *  on ne dessine que les lignes (surélevées pour ne pas z-fighter). */
+  linesOnly?: boolean;
+}
+
+export function Pitch({ linesOnly = false }: PitchProps) {
   const lines = useMemo(() => {
     // Arc de surface de réparation : portion du cercle de 9,15 m autour du
     // point de penalty située hors de la surface.
@@ -117,24 +123,27 @@ export function Pitch() {
   const stripeWidth = FIELD_LENGTH / STRIPE_COUNT;
 
   return (
-    <group>
-      {/* pelouse rayée */}
-      {Array.from({ length: STRIPE_COUNT }, (_, i) => (
-        <mesh
-          key={i}
-          rotation-x={-Math.PI / 2}
-          position={[-HALF_LENGTH + stripeWidth * (i + 0.5), 0, 0]}
-          receiveShadow
-        >
-          <planeGeometry args={[stripeWidth, FIELD_WIDTH]} />
-          <meshStandardMaterial color={i % 2 === 0 ? GRASS_LIGHT : GRASS_DARK} />
-        </mesh>
-      ))}
-      {/* dégagement autour du terrain */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, 0]} receiveShadow>
-        <planeGeometry args={[FIELD_LENGTH + 16, FIELD_WIDTH + 16]} />
-        <meshStandardMaterial color="#356b2c" />
-      </mesh>
+    <group position={[0, linesOnly ? 0.06 : 0, 0]}>
+      {/* pelouse + dégagement : uniquement quand on n'utilise pas le stade */}
+      {!linesOnly && (
+        <>
+          {Array.from({ length: STRIPE_COUNT }, (_, i) => (
+            <mesh
+              key={i}
+              rotation-x={-Math.PI / 2}
+              position={[-HALF_LENGTH + stripeWidth * (i + 0.5), 0, 0]}
+              receiveShadow
+            >
+              <planeGeometry args={[stripeWidth, FIELD_WIDTH]} />
+              <meshStandardMaterial color={i % 2 === 0 ? GRASS_LIGHT : GRASS_DARK} />
+            </mesh>
+          ))}
+          <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, 0]} receiveShadow>
+            <planeGeometry args={[FIELD_LENGTH + 16, FIELD_WIDTH + 16]} />
+            <meshStandardMaterial color="#356b2c" />
+          </mesh>
+        </>
+      )}
 
       <Line points={lines.border} color={LINE_COLOR} lineWidth={1.5} />
       <Line points={lines.halfway} color={LINE_COLOR} lineWidth={1.5} />
@@ -149,8 +158,13 @@ export function Pitch() {
         <Line key={`spot-${i}`} points={pts} color={LINE_COLOR} lineWidth={2} />
       ))}
 
-      <Goal side={1} />
-      <Goal side={-1} />
+      {/* nos cages seulement sans stade : le modèle de stade a les siennes */}
+      {!linesOnly && (
+        <>
+          <Goal side={1} />
+          <Goal side={-1} />
+        </>
+      )}
     </group>
   );
 }

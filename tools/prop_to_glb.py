@@ -27,6 +27,8 @@ def parse_args() -> argparse.Namespace:
                    help="supprime les meshes dont l'empreinte depasse N (skybox/sol parasite)")
     p.add_argument("--drop-name", default="",
                    help="sous-chaines de noms de meshes a supprimer, separees par ','")
+    p.add_argument("--green-name", default="",
+                   help="noms EXACTS de meshes a recolorer en vert pelouse (texture manquante), separes par ','")
     return p.parse_args(argv)
 
 
@@ -60,6 +62,23 @@ def main() -> None:
             o.select_set(True)
         bpy.ops.object.delete()
         print(f"[drop] {len(to_drop)} mesh(es) geant(s) supprime(s)")
+
+    # recoloration pelouse (mesh dont la texture manque et s'affiche magenta)
+    green_names = {s.strip() for s in args.green_name.split(",") if s.strip()}
+    if green_names:
+        mat = bpy.data.materials.new("PitchGreen")
+        mat.use_nodes = True
+        bsdf = mat.node_tree.nodes.get("Principled BSDF")
+        if bsdf:
+            bsdf.inputs["Base Color"].default_value = (0.20, 0.52, 0.18, 1.0)
+            bsdf.inputs["Roughness"].default_value = 0.9
+        recolored = 0
+        for o in bpy.data.objects:
+            if o.type == "MESH" and o.name in green_names:
+                o.data.materials.clear()
+                o.data.materials.append(mat)
+                recolored += 1
+        print(f"[green] {recolored} mesh(es) recolore(s) en pelouse")
 
     # bounding box monde de tous les meshes
     lo = [float("inf")] * 3
