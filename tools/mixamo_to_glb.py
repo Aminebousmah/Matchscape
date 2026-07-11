@@ -18,8 +18,10 @@ from pathlib import Path
 
 import bpy
 
-# nom de fichier -> nom de clip dans le GLB
+# nom de fichier -> nom de clip dans le GLB (fichiers absents ignores).
+# Inventaire complet et priorites : docs/animations.md
 CLIP_NAMES = {
+    # Tier 0 - base en place
     "idle": "Idle",
     "run": "Run",
     "sprint": "Sprint",
@@ -28,13 +30,41 @@ CLIP_NAMES = {
     "tackle": "Tackle",
     "celebrate": "Celebrate",
     "gk_dive": "GkDive",
+    # Tier 1 - locomotion
+    "walk": "Walk",
+    "jog_back": "JogBack",
+    "strafe_left": "StrafeLeft",
+    "strafe_right": "StrafeRight",
+    "idle_2": "Idle2",
+    "turn": "Turn",
+    # Tier 2 - gestes football
+    "header": "Header",
+    "receive": "Receive",
+    "long_pass": "LongPass",
+    "throw_in": "ThrowIn",
+    "gk_idle": "GkIdle",
+    "gk_catch": "GkCatch",
+    "gk_throw": "GkThrow",
+    # Tier 3 - evenements
+    "fall": "Fall",
+    "get_up": "GetUp",
+    "argue": "Argue",
+    "injured": "Injured",
+    "celebrate_2": "Celebrate2",
+    "celebrate_team": "CelebrateTeam",
+    "disappointed": "Disappointed",
+    "ref_whistle": "RefWhistle",
 }
 
 # Clips dont le deplacement est pilote par les waypoints du renderer :
 # tout root motion residuel (case "In Place" oubliee sur Mixamo, ou derive
 # des hanches) est aplati, sinon le joueur avance puis se teleporte en
 # arriere a chaque boucle du clip.
-IN_PLACE_CLIPS = {"Idle", "Run", "Sprint"}
+IN_PLACE_CLIPS = {
+    "Idle", "Run", "Sprint",
+    "Walk", "JogBack", "StrafeLeft", "StrafeRight", "Idle2",
+    "GkIdle", "Receive", "Disappointed",
+}
 
 
 def strip_root_motion(action: bpy.types.Action) -> None:

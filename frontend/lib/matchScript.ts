@@ -28,4 +28,21 @@ export interface MatchScriptChunk {
   ball: Waypoint[];
   players: Record<PlayerId, PlayerTrack>;
   commentary?: string;
+  /** Extensions HUD émises par le scénariste (backend/scenarist/models.py) */
+  minute?: number;
+  score?: [number, number];
+}
+
+export interface ReplayTeamMeta {
+  id: number;
+  name: string;
+  isHome: boolean;
+}
+
+/** Fichier de rejeu complet émis par `python -m scenarist.generate` */
+export interface MatchReplayFile {
+  fixtureId: number;
+  teams: ReplayTeamMeta[];
+  duration: number;
+  chunks: MatchScriptChunk[];
 }

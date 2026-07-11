@@ -49,18 +49,16 @@ Critère de sortie : un joueur court d'un point A à un point B avec une animati
 ## Phase 1 — MVP replay différé (3-4 semaines)
 
 ### 1.A — Backend : ingestion & event store
-- [ ] Scaffold `backend/` : FastAPI + pydantic v2 strict, Docker Compose (Postgres + Redis)
-- [ ] Normalisation payloads API-Football → `NormalizedEvent` (+ lineups, stats) ; tests pytest sur fixtures réelles
-- [ ] Event store Postgres + mode "rejeu" : rejouer un match terminé depuis les fixtures enregistrées
+- [x] Scaffold `backend/` : paquet Python `scenarist/` (pydantic v2 strict, pytest, venv) — FastAPI/Postgres/Redis attendront le live (phase 2)
+- [x] Normalisation payloads API-Football v3 → `NormalizedEvent` + lineups + stats (`scenarist/normalize.py`), gestion VAR "Goal cancelled" — testée sur le match test `fixture_1234567` (format API réel, contenu synthétique documenté, à remplacer par de vrais enregistrements dès la clé API)
+- [ ] Event store Postgres + enregistrement de vrais matchs (**bloqué : clé API-Football**)
 
 ### 1.B — Scénariste couche 1 (60% de l'effort — cœur du projet)
-- [ ] Gabarits tactiques JSON par formation (4-3-3, 4-4-2, 3-5-2…) : position de base par rôle
-- [ ] Machine à états match : KICKOFF → OPEN_PLAY → SET_PIECE → GOAL_SEQUENCE → CELEBRATION → RESTART
-- [ ] Génération de phases de possession synthétiques pondérées par les stats live
-- [ ] Raccord événement réel → séquence scriptée (but de X à la 34e ⇒ attaque qui finit par un tir de X)
-- [ ] Oscillation Perlin des positions hors-ballon
-- [ ] Émission de `MatchScriptChunk` (10-30 s) — déterministe avec seed, testé pytest
-- ✅ Critère : un match complet du week-end → suite de chunks cohérente de bout en bout
+- [x] **v0 livrée (2026-07-11)** — `scenarist/engine.py` : match test complet (90 min) → 317 chunks continus. Machine à états (kickoff/possession/but/penalty/carton/célébration/restart), possession pondérée par les stats (62/38), raccord événement réel → séquence (tir du buteur à la minute exacte), rouge = joueur retiré, remplacements, tirs synthétiques dérivés des stats, commentaires FR. Déterministe (seed), 15 tests pytest d'invariants (continuité joueurs/ballon entre chunks, bornes, vitesses < 11 m/s, progression score). Sortie : `python -m scenarist.generate` → `frontend/public/demo/match.json` (2,1 Mo)
+- Limites v0 assumées : pas de changement de côté à la mi-temps, remplaçant téléporté, corners fondus dans les tirs, temps additionnel compressé, positions par formation génériques (pas encore de gabarits JSON par rôle)
+- [ ] Gabarits tactiques JSON affinés par formation + oscillation Perlin hors-ballon
+- [ ] Variation des patterns d'attaque (aile gauche/droite/axe, contre-attaque vs possession)
+- ✅ Critère : un match complet du week-end (payloads réels) → suite de chunks cohérente de bout en bout — **v0 validée sur le match test, reste à valider sur un vrai match (clé API)**
 
 ### 1.C — Renderer complet
 - [x] **Démarré en avance (2026-07-11)** : format `MatchScriptChunk` typé (`lib/matchScript.ts`), rejeu complet par `MatchPlayback` (22 joueurs clonés SkeletonUtils + ballon avec hauteur z, une seule boucle useFrame), TimedAction → clips one-shot (PASS/SHOOT/TACKLE/CELEBRATE/GK_DIVE), chunk de démo scripté 60 s (`lib/demoChunk.ts` : 2 attaques + buts + circulation, testé : bornes terrain, vitesses ≤ 10,5 m/s, boucle sans téléportation)

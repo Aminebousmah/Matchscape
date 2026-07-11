@@ -1,0 +1,51 @@
+{
+  "get": "fixtures/lineups",
+  "parameters": { "fixture": "1234567" },
+  "errors": [],
+  "results": 2,
+  "response": [
+    {
+      "team": { "id": 85, "name": "Paris Saint Germain", "colors": { "player": { "primary": "1a3a6b", "number": "ffffff" } } },
+      "formation": "4-3-3",
+      "startXI": [
+        { "player": { "id": 10001, "name": "G. Donnarumma", "number": 99, "pos": "G", "grid": "1:1" } },
+        { "player": { "id": 10002, "name": "A. Hakimi", "number": 2, "pos": "D", "grid": "2:1" } },
+        { "player": { "id": 10003, "name": "Marquinhos", "number": 5, "pos": "D", "grid": "2:2" } },
+        { "player": { "id": 10004, "name": "W. Pacho", "number": 51, "pos": "D", "grid": "2:3" } },
+        { "player": { "id": 10005, "name": "Nuno Mendes", "number": 25, "pos": "D", "grid": "2:4" } },
+        { "player": { "id": 10006, "name": "W. Zaïre-Emery", "number": 33, "pos": "M", "grid": "3:1" } },
+        { "player": { "id": 10007, "name": "Vitinha", "number": 17, "pos": "M", "grid": "3:2" } },
+        { "player": { "id": 10010, "name": "J. Neves", "number": 87, "pos": "M", "grid": "3:3" } },
+        { "player": { "id": 10011, "name": "B. Barcola", "number": 29, "pos": "F", "grid": "4:1" } },
+        { "player": { "id": 10009, "name": "G. Ramos", "number": 9, "pos": "F", "grid": "4:2" } },
+        { "player": { "id": 10008, "name": "D. Doué", "number": 14, "pos": "F", "grid": "4:3" } }
+      ],
+      "substitutes": [
+        { "player": { "id": 10014, "name": "K. In-gyu", "number": 19, "pos": "M", "grid": null } },
+        { "player": { "id": 10015, "name": "Gonçalo Ramos II", "number": 27, "pos": "F", "grid": null } }
+      ],
+      "coach": { "id": 501, "name": "L. Enrique" }
+    },
+    {
+      "team": { "id": 81, "name": "Marseille", "colors": { "player": { "primary": "9fd6ff", "number": "ffffff" } } },
+      "formation": "4-2-3-1",
+      "startXI": [
+        { "player": { "id": 20001, "name": "G. Rulli", "number": 1, "pos": "G", "grid": "1:1" } },
+        { "player": { "id": 20002, "name": "A. Murillo", "number": 62, "pos": "D", "grid": "2:1" } },
+        { "player": { "id": 20003, "name": "L. Balerdi", "number": 5, "pos": "D", "grid": "2:2" } },
+        { "player": { "id": 20004, "name": "D. Cornelius", "number": 13, "pos": "D", "grid": "2:3" } },
+        { "player": { "id": 20005, "name": "Q. Merlin", "number": 3, "pos": "D", "grid": "2:4" } },
+        { "player": { "id": 20006, "name": "G. Kondogbia", "number": 19, "pos": "M", "grid": "3:1" } },
+        { "player": { "id": 20007, "name": "V. Rongier", "number": 21, "pos": "M", "grid": "3:2" } },
+        { "player": { "id": 20008, "name": "A. Harit", "number": 11, "pos": "M", "grid": "4:1" } },
+        { "player": { "id": 20009, "name": "M. Greenwood", "number": 10, "pos": "M", "grid": "4:2" } },
+        { "player": { "id": 20010, "name": "J. Henrique", "number": 45, "pos": "M", "grid": "4:3" } },
+        { "player": { "id": 20011, "name": "P. Aubameyang", "number": 97, "pos": "F", "grid": "5:1" } }
+      ],
+      "substitutes": [
+        { "player": { "id": 20014, "name": "B. Nadir", "number": 26, "pos": "M", "grid": null } }
+      ],
+      "coach": { "id": 502, "name": "R. De Zerbi" }
+    }
+  ]
+}

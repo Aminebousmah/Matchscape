@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Stats } from '@react-three/drei';
 import * as THREE from 'three';
@@ -8,10 +8,46 @@ import { Pitch } from './Pitch';
 import { MatchPlayback } from './MatchPlayback';
 import { TVCamera } from './TVCamera';
 import { buildDemoChunk } from '@/lib/demoChunk';
+import { useMatchStore } from '@/lib/matchStore';
+import type { MatchScriptChunk } from '@/lib/matchScript';
+import type { MatchReplayFile } from '@/lib/matchScript';
+
+interface LoadedMatch {
+  chunks: MatchScriptChunk[];
+  homeTeamId: number;
+}
 
 export default function Scene() {
   const ballRef = useRef<THREE.Group>(null);
-  const chunk = useMemo(buildDemoChunk, []);
+  const [match, setMatch] = useState<LoadedMatch | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/demo/match.json')
+      .then((r) => (r.ok ? (r.json() as Promise<MatchReplayFile>) : null))
+      .then((replay) => {
+        if (cancelled) return;
+        if (replay) {
+          const home = replay.teams.find((t) => t.isHome) ?? replay.teams[0];
+          const away = replay.teams.find((t) => !t.isHome) ?? replay.teams[1];
+          useMatchStore.setState({ teams: { home: home.name, away: away.name } });
+          setMatch({ chunks: replay.chunks, homeTeamId: home.id });
+        } else {
+          // pas de match généré : boucle de démo locale
+          useMatchStore.setState({ teams: { home: 'Bleus', away: 'Rouges' } });
+          setMatch({ chunks: [buildDemoChunk()], homeTeamId: 1 });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          useMatchStore.setState({ teams: { home: 'Bleus', away: 'Rouges' } });
+          setMatch({ chunks: [buildDemoChunk()], homeTeamId: 1 });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <Canvas
@@ -35,7 +71,13 @@ export default function Scene() {
       />
 
       <Pitch />
-      <MatchPlayback chunk={chunk} ballRef={ballRef} />
+      {match && (
+        <MatchPlayback
+          chunks={match.chunks}
+          homeTeamId={match.homeTeamId}
+          ballRef={ballRef}
+        />
+      )}
       <TVCamera targetRef={ballRef} />
       <Stats />
     </Canvas>
