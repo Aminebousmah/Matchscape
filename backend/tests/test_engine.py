@@ -122,6 +122,37 @@ def test_substitution_swaps_player(replay):
         assert "p20014" in chunk.players, "Nadir devrait être entré"
 
 
+def _sample(wps, t):
+    prev = wps[0]
+    for w in wps[1:]:
+        if w.t >= t:
+            span = w.t - prev.t
+            u = (t - prev.t) / span if span > 0 else 0.0
+            return (prev.x + (w.x - prev.x) * u, prev.y + (w.y - prev.y) * u)
+        prev = w
+    return (prev.x, prev.y)
+
+
+def test_pressing_present_in_open_play(replay):
+    """Grâce aux données StatsBomb : en jeu ouvert, un adversaire doit venir
+    presser le porteur (défenseur proche du ballon), pas rester dans son bloc."""
+    open_play = [c for c in replay.chunks if c.phase in ("OPEN_PLAY", "GOAL_SEQUENCE")]
+    assert open_play
+    pressed = 0
+    for c in open_play:
+        tm = (c.simTimeStart + c.simTimeEnd) / 2
+        bx, by = _sample(c.ball, tm)
+        dists = sorted(
+            math.hypot(_sample(tr.waypoints, tm)[0] - bx, _sample(tr.waypoints, tm)[1] - by)
+            for tr in c.players.values()
+        )
+        # le porteur est ~0 ; on veut un 2e joueur (presseur) à moins de 7 m
+        if len(dists) >= 2 and dists[1] < 7.0:
+            pressed += 1
+    # au moins 70 % des phases de jeu ouvert ont un pressing rapproché
+    assert pressed / len(open_play) > 0.7, f"{pressed}/{len(open_play)} phases pressées"
+
+
 def test_timeline_mirrors_api_events(replay):
     # 11 événements bruts API (dont le but annulé + l'événement VAR)
     assert len(replay.timeline) == 11

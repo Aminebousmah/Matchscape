@@ -17,6 +17,7 @@ téléporté à son poste, corners fondus dans les phases de tir synthétiques.
 
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import dataclass, field
 
@@ -159,31 +160,65 @@ class Scenarist:
         t1: float,
         ball_wps: list[Waypoint],
         involved: dict[int, list[Waypoint]],
+        ball_team_id: int | None = None,
     ) -> dict[str, PlayerTrack]:
-        """Tracks de tous les joueurs sur le terrain : les 'involved' ont leurs
-        waypoints scriptés, les autres coulissent en bloc vers le ballon."""
+        """Tracks de tous les joueurs sur le terrain, calibré sur les données
+        StatsBomb 360 (tools/analyze_statsbomb.py) :
+
+        - le bloc suit ET se comprime vers le ballon (côté ballon), en gardant
+          les défenseurs entre le ballon et leur but (compacité ~30-40 m) ;
+        - l'équipe SANS le ballon envoie ses 2 joueurs les plus proches PRESSER
+          à ~3-4 m du porteur (médiane réelle : 4,5 m) — c'était le grand absent.
+        Les 'involved' gardent leurs waypoints scriptés.
+        """
         players: dict[str, PlayerTrack] = {}
-        n_nodes = max(2, int((t1 - t0) / 6))
+        n_nodes = max(2, int((t1 - t0) / 4))
+        seg_dt = (t1 - t0) / n_nodes
+
+        # ballon à mi-chunk : sert à choisir les presseurs
+        bmx, bmy = self._ball_at(ball_wps, (t0 + t1) / 2)
+
+        pressers: set[int] = set()
+        if ball_team_id is not None:
+            for def_team, ids in self.on_pitch.items():
+                if def_team == ball_team_id:
+                    continue
+                outfield = [p for p in ids if p != self._gk(def_team)]
+                outfield.sort(key=lambda p: math.hypot(self.bases[p][0] - bmx, self.bases[p][1] - bmy))
+                pressers.update(outfield[:2])
+
         for team_id, ids in self.on_pitch.items():
+            own_goal_x = -self._attack_dir(team_id) * FIELD_X
             for pid in ids:
                 if pid in involved:
                     wps = involved[pid]
                 else:
                     base = self.bases[pid]
                     is_gk = pid == self._gk(team_id)
+                    is_presser = pid in pressers
                     pos = self.state.positions.get(pid, base)
                     wps = [Waypoint(t=t0, x=pos[0], y=pos[1])]
                     for k in range(1, n_nodes + 1):
-                        t = t0 + k * (t1 - t0) / n_nodes
+                        t = t0 + k * seg_dt
                         bx, by = self._ball_at(ball_wps, t)
                         if is_gk:
-                            tx = base[0] + clamp(bx * 0.05, -3, 3)
-                            ty = base[1] + clamp(by * 0.2, -3.5, 3.5)
+                            # le gardien suit la ligne du ballon, reste proche de sa cage
+                            tx = clamp(base[0] + (bx - base[0]) * 0.06, own_goal_x + 3, own_goal_x + 16 if own_goal_x < 0 else own_goal_x - 3)
+                            ty = base[1] + clamp(by * 0.2, -4.0, 4.0)
+                        elif is_presser:
+                            # se place entre le ballon et son propre but, à ~3,5 m
+                            gx = 1.0 if own_goal_x < bx else -1.0
+                            tx = bx + gx * 3.5
+                            ty = by + (base[1] - by) * 0.15  # léger biais vers son couloir
                         else:
-                            tx = base[0] + clamp(bx * 0.3, -12, 12) + self.rng.uniform(-3, 3)
-                            ty = base[1] + clamp(by * 0.25, -8, 8) + self.rng.uniform(-3, 3)
+                            # bloc compact : base décalée vers le ballon (longitudinal
+                            # fort, latéral côté ballon) + compression
+                            tx = base[0] + clamp((bx - base[0]) * 0.35, -18, 18)
+                            ty = base[1] + clamp((by - base[1]) * 0.45, -14, 14)
                         prev = (wps[-1].x, wps[-1].y)
-                        nx, ny = self._step_toward(prev, (clamp(tx, -50, 50), clamp(ty, -32, 32)), (t1 - t0) / n_nodes)
+                        nx, ny = self._step_toward(
+                            prev, (clamp(tx, -51, 51), clamp(ty, -33, 33)), seg_dt
+                        )
                         wps.append(Waypoint(t=t, x=nx, y=ny))
                 self.state.positions[pid] = (wps[-1].x, wps[-1].y)
                 players[f"p{pid}"] = PlayerTrack(
@@ -203,8 +238,9 @@ class Scenarist:
         involved: dict[int, list[Waypoint]] | None = None,
         actions: dict[int, list[TimedAction]] | None = None,
         commentary: str | None = None,
+        ball_team_id: int | None = None,
     ) -> None:
-        players = self._block_tracks(t0, t1, ball, involved or {})
+        players = self._block_tracks(t0, t1, ball, involved or {}, ball_team_id)
         for pid, acts in (actions or {}).items():
             players[f"p{pid}"].actions.extend(acts)
         notes = self.state.pending_commentary
@@ -255,7 +291,7 @@ class Scenarist:
             ]
         }
         actions = {striker: [TimedAction(t=t0 + RESTART, type="PASS")]}
-        self._emit(t0, t1, "RESTART", ball, involved, actions)
+        self._emit(t0, t1, "RESTART", ball, involved, actions, ball_team_id=team_id)
 
     def _possession(self, t0: float, dur: float) -> None:
         """Phase de possession synthétique pondérée par les stats.
@@ -311,7 +347,7 @@ class Scenarist:
             t = drive_end
 
         ball.append(Waypoint(t=t1, x=prev_x, y=prev_y))
-        self._emit(t0, t1, "OPEN_PLAY", ball, None, actions)
+        self._emit(t0, t1, "OPEN_PLAY", ball, None, actions, ball_team_id=team_id)
 
     def _attack(
         self,
@@ -368,7 +404,7 @@ class Scenarist:
             scorer_id: [TimedAction(t=t_shot - 0.1, type="SHOOT")],
             gk_opp: [TimedAction(t=t_shot + 0.3, type="GK_DIVE")],
         }
-        self._emit(t0, t_shot + 2, "GOAL_SEQUENCE" if is_goal else "OPEN_PLAY", ball, involved, actions)
+        self._emit(t0, t_shot + 2, "GOAL_SEQUENCE" if is_goal else "OPEN_PLAY", ball, involved, actions, ball_team_id=team_id)
 
     def _goal(self, ev: NormalizedEvent) -> None:
         t_shot = ev.sim_time
@@ -404,7 +440,8 @@ class Scenarist:
                 gk_opp: [TimedAction(t=t_shot + 0.2, type="GK_DIVE")],
             }
             self._emit(t0, t_shot + 2, "SET_PIECE", ball, involved, actions,
-                       commentary=f"⚽ {ev.minute}e — Penalty pour {self._team_name(ev.team_id)}…")
+                       commentary=f"⚽ {ev.minute}e — Penalty pour {self._team_name(ev.team_id)}…",
+                       ball_team_id=ev.team_id)
         else:
             self._attack(ev.team_id, t_shot, scorer, ev.assist_player_id, is_goal=True)
 

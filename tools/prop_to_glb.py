@@ -25,6 +25,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--out", required=True)
     p.add_argument("--drop-larger", type=float, default=1e9,
                    help="supprime les meshes dont l'empreinte depasse N (skybox/sol parasite)")
+    p.add_argument("--drop-name", default="",
+                   help="sous-chaines de noms de meshes a supprimer, separees par ','")
     return p.parse_args(argv)
 
 
@@ -42,10 +44,15 @@ def main() -> None:
     else:
         raise SystemExit(f"format non gere : {src.suffix}")
 
-    # drop des meshes geants (plan/skybox parasite gonflant le bbox)
+    # drop des meshes geants (plan/skybox parasite) et par nom (ex: FootballBall)
+    drop_names = [s.strip().lower() for s in args.drop_name.split(",") if s.strip()]
     to_drop = [
         o for o in bpy.data.objects
-        if o.type == "MESH" and max(o.dimensions.x, o.dimensions.y) > args.drop_larger
+        if o.type == "MESH"
+        and (
+            max(o.dimensions.x, o.dimensions.y) > args.drop_larger
+            or any(n in o.name.lower() for n in drop_names)
+        )
     ]
     if to_drop:
         bpy.ops.object.select_all(action="DESELECT")

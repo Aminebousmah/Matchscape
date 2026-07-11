@@ -56,7 +56,8 @@ Critère de sortie : un joueur court d'un point A à un point B avec une animati
 ### 1.B — Scénariste couche 1 (60% de l'effort — cœur du projet)
 - [x] **v0 livrée (2026-07-11)** — `scenarist/engine.py` : match test complet (90 min) → 317 chunks continus. Machine à états (kickoff/possession/but/penalty/carton/célébration/restart), possession pondérée par les stats (62/38), raccord événement réel → séquence (tir du buteur à la minute exacte), rouge = joueur retiré, remplacements, tirs synthétiques dérivés des stats, commentaires FR. Déterministe (seed), 15 tests pytest d'invariants (continuité joueurs/ballon entre chunks, bornes, vitesses < 11 m/s, progression score). Sortie : `python -m scenarist.generate` → `frontend/public/demo/match.json` (2,1 Mo)
 - Limites v0 assumées : pas de changement de côté à la mi-temps, remplaçant téléporté, corners fondus dans les tirs, temps additionnel compressé, positions par formation génériques (pas encore de gabarits JSON par rôle)
-- [ ] Gabarits tactiques JSON affinés par formation + oscillation Perlin hors-ballon
+- [x] **Positionnement calibré sur données réelles (2026-07-11)** : analyse des freeze-frames StatsBomb 360 (`tools/analyze_statsbomb.py`, dataset Kaggle gitignoré) → 2 apports dans le moteur : (1) **pressing** — 1-2 défenseurs closent le porteur à ~3,5 m (médiane réelle mesurée 4,5 m), absent avant ; (2) **bloc compact orienté ballon** — compression vers le ballon, défenseurs côté but. Testé (`test_pressing_present_in_open_play`, >70 % des phases)
+- [ ] Affiner : lignes défensives disciplinées, hors-jeu, transitions attaque↔défense, gabarits JSON par formation + Perlin
 - [ ] Variation des patterns d'attaque (aile gauche/droite/axe, contre-attaque vs possession)
 - ✅ Critère : un match complet du week-end (payloads réels) → suite de chunks cohérente de bout en bout — **v0 validée sur le match test, reste à valider sur un vrai match (clé API)**
 

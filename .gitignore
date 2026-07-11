@@ -7,5 +7,6 @@ data/
 tools/blender*
 assets/mixamo/*.fbx
 new assets/
+dataheatmap/
 __pycache__/
 .venv/
